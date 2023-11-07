@@ -1,11 +1,9 @@
 package com.preservinc.production.djr.service;
 
-import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import com.preservinc.production.djr.model.Report;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -14,12 +12,6 @@ import java.time.ZoneId;
 @Service
 public class ReportService {
     private static final Logger logger = LogManager.getLogger();
-    private final AuthorizationService authorizationService;
-
-    @Autowired
-    public ReportService(AuthorizationService authorizationService) {
-        this.authorizationService = authorizationService;
-    }
 
     public void submitReport(FirebaseToken firebaseToken, Report report) {
         logger.info("[Report Service] Handling report for job site ID {} submitted by {}", report.jobID(), firebaseToken.getName());
