@@ -160,7 +160,7 @@ public class WeatherService {
     }
 
     private Object sendRequest(HttpRequest request, Function<String, ?> responseHandler) throws WeatherAPIException, IOException, InterruptedException {
-        if (!checkRateLimit()) throw new WeatherAPIException(WeatherAPIException.ExceptionType.RATE_LIMIT_EXCEEDED);
+        if (checkRateLimit()) throw new WeatherAPIException(WeatherAPIException.ExceptionType.RATE_LIMIT_EXCEEDED);
 
         try {
             HttpResponse<String> response = this.client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -187,7 +187,7 @@ public class WeatherService {
     private CompletableFuture<Object> sendAsyncRequest(HttpRequest request, Function<String, ?> responseHandler) {
         CompletableFuture<Object> response = new CompletableFuture<Object>().orTimeout(25, TimeUnit.SECONDS);
 
-        if (!checkRateLimit()) {
+        if (checkRateLimit()) {
             response.completeExceptionally(new WeatherAPIException(WeatherAPIException.ExceptionType.RATE_LIMIT_EXCEEDED));
             return response;
         }
@@ -224,12 +224,12 @@ public class WeatherService {
     }
 
     private boolean checkRateLimit() {
-        if (!this.hasExceededRateLimit) return true;
+        if (!this.hasExceededRateLimit) return false;
         else if (this.rateLimitExceededTimestamp.isBefore(LocalDateTime.now().withHour(0).withMinute(0).withSecond(0))) {
             this.hasExceededRateLimit = false;
             this.rateLimitExceededTimestamp = null;
-            return true;
-        } else return false;
+            return false;
+        } else return true;
     }
 }
 
