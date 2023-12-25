@@ -168,24 +168,6 @@ public final class Report {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Report{");
-        sb.append("jobID=").append(jobID);
-        sb.append(", reportDate=").append(reportDate);
-        sb.append(", weather='").append(weather).append('\'');
-        sb.append(", crewSize=").append(crewSize);
-        sb.append(", visitors='").append(visitors).append('\'');
-        sb.append(", workArea1='").append(workArea1).append('\'');
-        sb.append(", workArea2='").append(workArea2).append('\'');
-        sb.append(", workArea3='").append(workArea3).append('\'');
-        sb.append(", workArea4='").append(workArea4).append('\'');
-        sb.append(", workArea5='").append(workArea5).append('\'');
-        sb.append(", materials1='").append(materials1).append('\'');
-        sb.append(", materials2='").append(materials2).append('\'');
-        sb.append(", materials3='").append(materials3).append('\'');
-        sb.append(", materials4='").append(materials4).append('\'');
-        sb.append(", subs='").append(subs).append('\'');
-        sb.append(", onsite=").append(onsite);
-        sb.append('}');
-        return sb.toString();
+        return "Report{jobID=%d, reportDate=%s, weather='%s', crewSize=%d, visitors='%s', workArea1='%s', workArea2='%s', workArea3='%s', workArea4='%s', workArea5='%s', materials1='%s', materials2='%s', materials3='%s', materials4='%s', subs='%s', onsite=%s}".formatted(jobID, reportDate, weather, crewSize, visitors, workArea1, workArea2, workArea3, workArea4, workArea5, materials1, materials2, materials3, materials4, subs, onsite);
     }
 }

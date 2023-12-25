@@ -25,7 +25,7 @@ public class ServerConfiguration implements WebMvcConfigurer {
     }
 
 
-    @Bean
+    @Bean("config")
     public Properties loadConfig() {
         return this.config;
     }

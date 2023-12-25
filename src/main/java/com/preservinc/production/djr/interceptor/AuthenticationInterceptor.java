@@ -5,6 +5,7 @@ import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.Getter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +54,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         }
     }
 
+    @Getter
     private enum AuthorizationType {
         BEARER ("Bearer");
 
@@ -60,10 +62,6 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 
         AuthorizationType(String name) {
             this.name = name;
-        }
-
-        public String getName() {
-            return this.name;
         }
 
         @Override
