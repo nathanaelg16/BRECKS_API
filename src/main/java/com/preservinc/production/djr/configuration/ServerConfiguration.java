@@ -1,5 +1,11 @@
 package com.preservinc.production.djr.configuration;
 
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
 import com.preservinc.production.djr.interceptor.AuthenticationInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,6 +34,17 @@ public class ServerConfiguration implements WebMvcConfigurer {
     @Bean("config")
     public Properties loadConfig() {
         return this.config;
+    }
+
+    @Bean("spaces")
+    public AmazonS3 buildSpaces() {
+        final String endpoint = config.getProperty("spaces.endpoint");
+        final String secret = config.getProperty("spaces.secret");
+        final String key = config.getProperty("spaces.key");
+        return AmazonS3Client.builder()
+                .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, Regions.US_EAST_1.getName()))
+                .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret)))
+                .build();
     }
 
     @Override
