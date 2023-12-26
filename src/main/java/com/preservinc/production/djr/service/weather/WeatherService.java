@@ -1,4 +1,4 @@
-package com.preservinc.production.djr.service;
+package com.preservinc.production.djr.service.weather;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 @Service
-public class WeatherService {
+public class WeatherService implements IWeatherService {
     private static final Logger logger = LogManager.getLogger();
     private final IEmailService emailService;
     private final Properties config;
@@ -94,7 +94,7 @@ public class WeatherService {
         } catch (RuntimeException | ExecutionException e) {
             if (e.getCause() instanceof WeatherAPIException || e.getCause() instanceof JsonProcessingException) {
                 logger.error("[Weather Service] Failed to fetch weather conditions: %s".formatted(e.getMessage()));
-                emailService.notifyAdmin(e.getCause());
+                emailService.notifySysAdmin(e.getCause());
             }
             weather.setDescription(null);
         } catch (InterruptedException e) {
@@ -110,7 +110,7 @@ public class WeatherService {
         } catch (ExecutionException e) {
             if (e.getCause() instanceof WeatherAPIException) {
                 logger.error("[Weather Service] Failed to fetch temperature statistics: %s".formatted(e.getMessage()));
-                emailService.notifyAdmin(e.getCause());
+                emailService.notifySysAdmin(e.getCause());
             }
             return null;
         } catch (InterruptedException e) {
@@ -146,12 +146,12 @@ public class WeatherService {
             this.weather = null;
         } catch (WeatherAPIException e) {
             logger.error("[Weather Service] Failed to fetch weather: %s".formatted(e.getMessage()));
-            emailService.notifyAdmin(e);
+            emailService.notifySysAdmin(e);
             this.weather = null;
         } catch (RuntimeException e) {
             logger.error("[Weather Service] Failed to fetch weather: %s".formatted(e.getMessage()));
             if (e.getCause() instanceof WeatherAPIException || e.getCause() instanceof JsonProcessingException) {
-                emailService.notifyAdmin(e.getCause());
+                emailService.notifySysAdmin(e.getCause());
             }
             this.weather = null;
         } finally {

@@ -3,7 +3,7 @@ package com.preservinc.production.djr;
 import com.preservinc.production.djr.model.Report;
 import com.preservinc.production.djr.model.weather.Weather;
 import com.preservinc.production.djr.service.email.IEmailService;
-import com.preservinc.production.djr.service.WeatherService;
+import com.preservinc.production.djr.service.weather.WeatherService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.io.File;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -31,12 +32,17 @@ public class WeatherServiceTest {
 
     class EmailServiceMock implements IEmailService {
         @Override
-        public void sendReportEmail(Report report) {
+        public void sendReportEmail(File report) {
             // TODO: Implement this
         }
 
         @Override
-        public void notifyAdmin(Throwable ex) {
+        public void sendReportSubmissionNotification(Report report) {
+            // TODO: Implement this
+        }
+
+        @Override
+        public void notifySysAdmin(Throwable ex) {
             // TODO: Implement this
             ex.printStackTrace();
         }
