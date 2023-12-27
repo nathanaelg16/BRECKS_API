@@ -23,7 +23,7 @@ public class ReportsController {
     }
 
     public ResponseEntity<Object> submitNewJobReport(@RequestAttribute("FirebaseToken") FirebaseToken firebaseToken, @RequestBody Report report) {
-        logger.info("[Reports Controller] Received new job report for job ID {} submitted by {}", report.jobID(), firebaseToken.getName());
+        logger.info("[Reports Controller] Received new job report for job ID {} submitted by {}", report.getJobID(), firebaseToken.getName());
         try {
             reportService.submitReport(firebaseToken, report);
             return ResponseEntity.ok().build();
