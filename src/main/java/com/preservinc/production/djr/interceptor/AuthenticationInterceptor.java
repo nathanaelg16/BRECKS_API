@@ -34,7 +34,6 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         String[] authorizationTypeAndToken = authorizationHeader.split(" ");
         String authorizationType = authorizationTypeAndToken[0].strip();
         String authorizationToken = authorizationTypeAndToken[1].strip();
-
         if (authorizationType.equals(AuthorizationType.BEARER.toString())) {
             try {
                 FirebaseToken firebaseAuthenticationToken = firebaseAuth.verifyIdToken(authorizationToken, true);
