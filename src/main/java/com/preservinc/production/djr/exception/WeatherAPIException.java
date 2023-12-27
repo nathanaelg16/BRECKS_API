@@ -3,7 +3,7 @@ package com.preservinc.production.djr.exception;
 import lombok.Getter;
 
 @Getter
-public class WeatherAPIException extends RuntimeException {
+public class WeatherAPIException extends Exception {
     public enum ExceptionType {
         BAD_REQUEST ("W-API-00"),
         UNAUTHORIZED ("W-API-01"),
