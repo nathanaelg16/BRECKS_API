@@ -1,6 +1,5 @@
 package com.preservinc.production.djr.controller;
 
-import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import com.preservinc.production.djr.model.Report;
 import com.preservinc.production.djr.service.ReportService;
@@ -22,6 +21,7 @@ public class ReportsController {
         this.reportService = reportService;
     }
 
+    @PostMapping
     public ResponseEntity<Object> submitNewJobReport(@RequestAttribute("FirebaseToken") FirebaseToken firebaseToken, @RequestBody Report report) {
         logger.info("[Reports Controller] Received new job report for job ID {} submitted by {}", report.getJobID(), firebaseToken.getName());
         try {

@@ -19,6 +19,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.io.IOException;
 import java.util.Properties;
 
+// todo change config-*.properties files to be all in the application-*.properties so that they can be injected
+
 @Configuration
 public class ServerConfiguration implements WebMvcConfigurer {
     private final AuthenticationInterceptor authenticationInterceptor;

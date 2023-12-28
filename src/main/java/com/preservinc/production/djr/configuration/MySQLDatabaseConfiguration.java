@@ -25,8 +25,8 @@ public class MySQLDatabaseConfiguration {
     @Bean
     public DataSource getDataSource() {
         logger.info("[MySQL Database Configuration] Initializing HikariCP data source...");
-        String username = config.getProperty("mysql.user");
-        String password = config.getProperty("mysql.pass");
+        String username = config.getProperty("mysql.username");
+        String password = config.getProperty("mysql.password");
         String DB_HOST = config.getProperty("mysql.host");
         String DB_PORT = config.getProperty("mysql.port");
         String DB_NAME = config.getProperty("mysql.db");

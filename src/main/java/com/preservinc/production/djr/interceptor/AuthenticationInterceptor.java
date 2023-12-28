@@ -18,20 +18,38 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
     private static final Logger logger = LogManager.getLogger();
 
     private final FirebaseAuth firebaseAuth;
+    private final String firebaseTestToken;
 
     @Value("${spring.profiles.active}")
     private String activeProfile;
 
     @Autowired
-    public AuthenticationInterceptor(FirebaseAuth firebaseAuth) {
+    public AuthenticationInterceptor(FirebaseAuth firebaseAuth, String firebaseTestToken) {
         this.firebaseAuth = firebaseAuth;
+        this.firebaseTestToken = firebaseTestToken;
     }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         logger.info("[Auth Interceptor -- Pre-Handle] Checking request authentication at endpoint {}", request.getRequestURI());
+
+        if (activeProfile.equalsIgnoreCase("test") || activeProfile.equalsIgnoreCase("local")) {
+            request.setAttribute("FirebaseToken", this.firebaseAuth.verifyIdToken(firebaseTestToken));
+            return true;
+        }
+
         String authorizationHeader = request.getHeader("Authorization");
+        if (authorizationHeader.isBlank()) {
+            response.sendError(401, "Invalid authentication token");
+            return false;
+        }
+
         String[] authorizationTypeAndToken = authorizationHeader.split(" ");
+        if (authorizationTypeAndToken.length != 2) {
+            response.sendError(401, "Invalid authentication token");
+            return false;
+        }
+
         String authorizationType = authorizationTypeAndToken[0].strip();
         String authorizationToken = authorizationTypeAndToken[1].strip();
         if (authorizationType.equals(AuthorizationType.BEARER.toString())) {
