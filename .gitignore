@@ -33,7 +33,10 @@ build/
 .vscode/
 
 ### Project Configuration Files ###
-/src/main/resources/serviceAccountKey.json
-src/main/resources/config-*.properties
+src/main/resources/serviceAccountKey.json
 src/main/resources/email-*.properties
 src/main/resources/application-*.properties
+
+### Firebase ###
+ui-debug.log
+.firebase/
