@@ -34,8 +34,7 @@ build/
 
 ### Project Configuration Files ###
 src/main/resources/serviceAccountKey.json
-src/main/resources/email-*.properties
-src/main/resources/application-*.properties
+src/main/resources/*.properties
 
 ### Firebase ###
 ui-debug.log
