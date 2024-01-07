@@ -7,7 +7,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.time.LocalDate;
 
-public record Job (int id, @NonNull String address, LocalDate startDate, LocalDate endDate, JobStatus status, Team team) {
+public record Job (int id, @NonNull String address, LocalDate startDate, LocalDate endDate, @NonNull JobStatus status, @NonNull Team team) {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

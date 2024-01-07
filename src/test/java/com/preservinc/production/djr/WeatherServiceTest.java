@@ -38,18 +38,18 @@ public class WeatherServiceTest {
     static class EmailServiceMock implements IEmailService {
         @Override
         public void sendReportEmail(Employee author, Job job, LocalDate reportDate, File report) throws SQLException, IOException, MessagingException {
-            // TODO: Implement this
+            logger.info("[TEST] [EmailServiceMock] Sending report email");
         }
 
         @Override
         public void sendReportSubmissionNotification(Report report, Job job) {
-            // TODO: Implement this
+            logger.info("[TEST] [EmailServiceMock] Sending report submission notification email");
         }
 
         @Override
         public void notifySysAdmin(Throwable ex) {
-            // TODO: Implement this
-            ex.printStackTrace();
+            logger.info("[TEST] [EmailServiceMock] Notifying SysAdmin of error");
+            logger.error(ex);
         }
     }
 
