@@ -89,20 +89,14 @@ a {
 }
 
 table {
-
+    margin: auto;
+    width: 100%;
+    border: none;
+    border-collapse: collapse;
 }
 
-/*LOGO*/
-
-.logo h1 {
-    margin: 0;
-}
-
-.logo h1 a {
-    color: #17bebb;
-    font-size: 24px;
-    font-weight: 700;
-    font-family: 'Noto Sans', sans-serif;
+td {
+    padding: 0;
 }
 
 /*HERO*/
@@ -173,13 +167,13 @@ main {
     overflow: hidden;
 }
 
-#div-logo {
-    margin: 0 auto;
+.logo {
+    margin: auto;
+    display: flex;
 }
 
-#div-logo > p {
-    padding-top: 20px;
-    padding-left: -20px;
+.logo > a {
+    margin: 0 auto;
 }
 
 /*FOOTER*/
