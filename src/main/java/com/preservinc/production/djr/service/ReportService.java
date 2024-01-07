@@ -10,12 +10,13 @@ import com.preservinc.production.djr.dao.reports.IReportsDAO;
 import com.preservinc.production.djr.exception.ServerException;
 import com.preservinc.production.djr.exception.report.*;
 import com.preservinc.production.djr.model.Report;
-import com.preservinc.production.djr.model.team.Team;
+import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.Employee;
 import com.preservinc.production.djr.model.team.TeamMemberRole;
 import com.preservinc.production.djr.model.weather.Weather;
 import com.preservinc.production.djr.service.email.IEmailService;
 import com.preservinc.production.djr.service.weather.IWeatherService;
+import jakarta.mail.MessagingException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,6 +25,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -35,31 +37,30 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Properties;
 
 @Service
 public class ReportService {
     private static final Logger logger = LogManager.getLogger();
 
+    private final Environment env;
     private final IWeatherService weatherService;
     private final IEmailService emailService;
     private final IReportsDAO reportsDAO;
     private final IJobsDAO jobsDAO;
     private final IEmployeesDAO employeesDAO;
     private final AmazonS3 spaces;
-    private final Properties config;
 
     @Autowired
-    public ReportService(IWeatherService weatherService, IEmailService emailService,
+    public ReportService(Environment env, IWeatherService weatherService, IEmailService emailService,
                          IReportsDAO reportsDAO, IJobsDAO jobsDAO, IEmployeesDAO employeesDAO,
-                         AmazonS3 spaces, Properties config) {
+                         AmazonS3 spaces) {
+        this.env = env;
         this.weatherService = weatherService;
         this.emailService = emailService;
         this.reportsDAO = reportsDAO;
         this.jobsDAO = jobsDAO;
         this.employeesDAO = employeesDAO;
         this.spaces = spaces;
-        this.config = config;
     }
 
     public void submitReport(FirebaseToken firebaseToken, Report report) {
@@ -69,31 +70,49 @@ public class ReportService {
 
         try {
             Employee reportingUser;
-            Team team = jobsDAO.getTeam(report.getJobID());
+            Job job = jobsDAO.getJob(report.getJobID());
 
-            if (team == null)
+            if (job == null)
                 throw new InvalidJobSiteException();
 
-            Pair<Employee, TeamMemberRole> reportingUserAndRole = team.findTeamMemberByUID(firebaseToken.getUid());
+            logger.info("[Report Service] Team PM: {}", job.team().getProjectManager().fullName());
+
+            Pair<Employee, TeamMemberRole> reportingUserAndRole = job.team().findTeamMemberByUID(firebaseToken.getUid());
             if (reportingUserAndRole == null) {
+                logger.info("[Report Service] Reporting user is not a member of the assigned team.");
                 reportingUser = employeesDAO.findEmployeeByUID(firebaseToken.getUid());
-                report.setPS(team.findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0));
+                report.setPS(job.team().findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0));
             } else {
                 reportingUser = reportingUserAndRole.getLeft();
                 TeamMemberRole role = reportingUserAndRole.getRight();
                 if (role == TeamMemberRole.PROJECT_SUPERVISOR) report.setPS(reportingUser);
-                else report.setPS(team.findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0));
+                else report.setPS(job.team().findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0));
+                logger.debug("[Report Service] Reporting user is member of the team.");
             }
 
             report.setReportBy(reportingUser);
-            report.setPM(team.getProjectManager());
-            reportsDAO.saveReport(report);
+            report.setPM(job.team().getProjectManager());
+            reportsDAO.saveReport(report); //todo uncomment
+
+            File reportPDF = null;
 
             try {
-                emailService.sendReportEmail(generateReportPDF(report));
-            } catch (RuntimeException | IOException e) {
+                reportPDF = generateReportPDF(report, job.address());
+                emailService.sendReportEmail(reportingUser, job, report.getReportDate(), reportPDF);
+            } catch (SQLException | RuntimeException | IOException e) {
                 logger.error("[Report Service] Error generating PDF: {}", e.getMessage());
+                e.printStackTrace();
                 emailService.sendReportSubmissionNotification(report);
+            } catch (MessagingException e) {
+                logger.error("[Report Service] An error occurred delivering the message: {}", e.getMessage());
+                e.printStackTrace();
+                emailService.sendReportSubmissionNotification(report);
+            } finally {
+                try {
+                    if (reportPDF != null) reportPDF.delete();
+                } catch (Exception e) {
+                    reportPDF.deleteOnExit();
+                }
             }
 
         } catch (SQLException e) {
@@ -129,27 +148,18 @@ public class ReportService {
         }
     }
 
-    private File generateReportPDF(Report report) throws IOException {
+    private File generateReportPDF(Report report, String address) throws IOException {
         // todo store template files locally and compare hashes before downloading from S3
 
         logger.info("[Report Service] Generating PDF...");
-
-        String address;
-        try {
-            address = this.jobsDAO.getJobAddress(report.getJobID());
-        } catch (SQLException e) {
-            logger.error("[Report Service] Error retrieving job address: {}", e.getMessage());
-            throw new RuntimeException(e);
-        }
 
         Path reportPDFPath = Path.of(System.getProperty("java.io.tmpdir"), "%s - DJR - %s.pdf"
                 .formatted(address, report.getReportDate().format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))));
         Path tempFilePath = Files.createTempFile("report", ".pdf");
 
         logger.info("[Report Service] Retrieving PDF template...");
-        S3Object reportPDFTemplateObject = spaces
-                .getObject("%s/%s".formatted(config.getProperty("spaces.name"),
-                        config.getProperty("spaces.folder")), "DJR%s.pdf".formatted(report.isOnsite() ? "" : "-R"));
+        S3Object reportPDFTemplateObject = spaces.getObject(env.getProperty("spaces.name"),
+                "%s/DJR%s.pdf".formatted(env.getProperty("spaces.folder"), report.isOnsite() ? "" : "-R"));
         S3ObjectInputStream reportPDFTemplateObjectInputStream = reportPDFTemplateObject.getObjectContent();
         Files.copy(reportPDFTemplateObjectInputStream, tempFilePath, StandardCopyOption.REPLACE_EXISTING);
 

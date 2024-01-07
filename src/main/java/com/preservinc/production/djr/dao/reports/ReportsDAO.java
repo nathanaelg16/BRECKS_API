@@ -7,10 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Repository
 public class ReportsDAO implements IReportsDAO {
@@ -24,8 +23,8 @@ public class ReportsDAO implements IReportsDAO {
 
     @Override
     public void saveReport(Report report) throws SQLException {
-        logger.info("[ReportsDAO] Saving report to database.\nJob ID: {}\tReport Date: {}\tBy: ID #{}",
-                report.getJobID(), report.getReportDate(), report.getReportBy());
+        logger.info("[ReportsDAO] Saving report to database.\nJob ID: {}\tReport Date: {}\tBy: {} (ID# {})",
+                report.getJobID(), report.getReportDate(), report.getReportBy(), report.getReportBy().id());
 
         try (Connection c = dataSource.getConnection();
              PreparedStatement p = c.prepareStatement("INSERT INTO Reports (job_id, reportDate, weather, " +
@@ -53,5 +52,22 @@ public class ReportsDAO implements IReportsDAO {
             p.executeUpdate();
         }
         logger.info("[ReportsDAO] Successfully saved report to database.");
+    }
+
+    @Override
+    public List<String> getEmailsForReportAdmins() throws SQLException {
+        logger.info("[ReportsDAO] Getting emails for report admins.");
+
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement p = c.prepareStatement("select E.email " +
+                     "from ReportAdmins R " +
+                     "inner join Employees E on E.id = R.employee_id " +
+                     "where R.notify_reports is true;");
+             ResultSet r = p.executeQuery()
+        ) {
+            List<String> emails = new ArrayList<>();
+            while (r.next()) emails.add(r.getString("email"));
+            return emails;
+        }
     }
 }

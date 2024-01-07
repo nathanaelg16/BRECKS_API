@@ -1,12 +1,13 @@
 package com.preservinc.production.djr.model.job;
 
+import com.preservinc.production.djr.model.team.Team;
 import lombok.NonNull;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.time.LocalDate;
 
-public record Job (int id, @NonNull String address, LocalDate startDate, LocalDate endDate, JobStatus status) {
+public record Job (int id, @NonNull String address, LocalDate startDate, LocalDate endDate, JobStatus status, Team team) {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

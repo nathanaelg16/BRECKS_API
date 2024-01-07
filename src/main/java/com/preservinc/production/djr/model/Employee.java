@@ -4,6 +4,10 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public record Employee(int id, String uid, String firstName, String lastName, String displayName, String role, String email, boolean isAdmin) {
+    public String fullName() {
+        return "%s %s".formatted(this.firstName, this.lastName);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
