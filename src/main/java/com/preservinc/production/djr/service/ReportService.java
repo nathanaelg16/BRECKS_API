@@ -101,12 +101,14 @@ public class ReportService {
                 emailService.sendReportEmail(reportingUser, job, report.getReportDate(), reportPDF);
             } catch (SQLException | RuntimeException | IOException e) {
                 logger.error("[Report Service] Error generating PDF: {}", e.getMessage());
-                e.printStackTrace();
-                emailService.sendReportSubmissionNotification(report);
+                e.printStackTrace(); // todo remove this line
+                try { emailService.sendReportSubmissionNotification(report, job); }
+                catch (Exception ignored) {}
             } catch (MessagingException e) {
                 logger.error("[Report Service] An error occurred delivering the message: {}", e.getMessage());
-                e.printStackTrace();
-                emailService.sendReportSubmissionNotification(report);
+                e.printStackTrace(); // todo remove this line
+                try { emailService.sendReportSubmissionNotification(report, job); }
+                catch (Exception ignored) {}
             } finally {
                 try {
                     if (reportPDF != null) reportPDF.delete();

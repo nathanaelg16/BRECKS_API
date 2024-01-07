@@ -42,7 +42,7 @@ public class WeatherServiceTest {
         }
 
         @Override
-        public void sendReportSubmissionNotification(Report report) {
+        public void sendReportSubmissionNotification(Report report, Job job) {
             // TODO: Implement this
         }
 

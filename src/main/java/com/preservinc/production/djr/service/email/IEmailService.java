@@ -12,6 +12,6 @@ import java.time.LocalDate;
 
 public interface IEmailService {
     void sendReportEmail(Employee author, Job job, LocalDate reportDate, File report) throws SQLException, IOException, MessagingException;
-    void sendReportSubmissionNotification(Report report);
+    void sendReportSubmissionNotification(Report report, Job job) throws SQLException, IOException, MessagingException;
     void notifySysAdmin(Throwable ex);
 }
