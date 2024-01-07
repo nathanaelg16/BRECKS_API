@@ -7,64 +7,10 @@
     --pastel-pink: #E19E9A;
 }
 
-.primary {
-    background: #17bebb;
-}
-
-.bg_black {
-    background: #000000;
-}
-
-.bg_dark {
-    background: rgba(0, 0, 0, .8);
-}
-
-.bg_white {
-    background: #FFF
-}
-
 .email-section {
     padding: 2.5em;
     display: flex;
     flex-direction: column;
-}
-
-/*BUTTON*/
-.btn {
-    padding: 10px 15px;
-    display: inline-block;
-}
-
-.btn.btn-primary {
-    border-radius: 5px;
-    background: #CBB677;
-    color: #004a80;
-}
-
-.btn.btn-white {
-    border-radius: 5px;
-    background: #ffffff;
-    color: #000000;
-}
-
-.btn.btn-white-outline {
-    border-radius: 5px;
-    background: transparent;
-    border: 1px solid #fff;
-    color: #fff;
-}
-
-.btn.btn-black-outline {
-    border-radius: 0;
-    background: transparent;
-    border: 2px solid #000;
-    color: #000;
-    font-weight: 700;
-}
-
-.btn-custom {
-    color: rgba(0, 0, 0, .3);
-    text-decoration: underline;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -97,6 +43,13 @@ table {
 
 td {
     padding: 0;
+    text-align: center;
+}
+
+table .nested {
+    margin: auto !important;
+    width: 100%;
+
 }
 
 /*HERO*/
@@ -105,16 +58,17 @@ td {
     z-index: 0;
     border: 2px solid var(--timberwolf);
     background: var(--cultured);
-    height: 200px;
     display: flex;
     flex-direction: column;
     justify-content: space-around;
     text-align: center;
     margin-top: 5px;
+    height: auto;
+    padding: 15px 0;
 }
 
 .hero > * {
-    margin: auto;
+    margin: 0 auto;
     padding: 0 25px;
 }
 
@@ -133,6 +87,7 @@ td {
 .hero .text h3 {
     font-size: 24px;
     font-weight: 300;
+    margin-bottom: 0;
 }
 
 .hero .text h2 span {
@@ -156,9 +111,9 @@ td {
     margin-bottom: 0;
 }
 
-main {
+.email-container {
     margin: 0 auto;
-    padding-top: 5vh;
+    padding: 5vh 3vw;
 }
 
 #prerender {
@@ -168,6 +123,7 @@ main {
 }
 
 .logo {
+    padding-top: 3vh;
     margin: auto;
     display: flex;
 }

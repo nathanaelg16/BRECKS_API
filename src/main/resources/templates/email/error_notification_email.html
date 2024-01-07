@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-    <!--<link rel="stylesheet" href="resets.css"/>-->
-    <!--<link rel="stylesheet" href="styles.css"/>-->
+    <link rel="stylesheet" href="resets.css"/>
+    <link rel="stylesheet" href="styles.css"/>
     <style>
         {{CSS_RESETS}}
     </style>
@@ -31,26 +31,35 @@
     </style>
 </head>
 <body>
-<div id="prerender">
-    {{EXCEPTION}}<br/><br/><br/><br/><br/>
+<div class="email-container">
+    <table role="presentation">
+        <tr class="email-header">
+            <td>
+                <div class="logo">
+                    <a href="{{WEB_APP_HOST}}">
+                        <img src="https://khd5028k-dev.nyc3.cdn.digitaloceanspaces.com/BRECKS/BRECKS-v2.png" width="300" alt="BRECKS">
+                    </a>
+                </div>
+            </td>
+        </tr>
+        <tr class="email-body">
+            <td>
+                <div class="email-section">
+                    <div class="hero">
+                        <h3>A critical error has occurred!</h3>
+                        <p class="text">{{EXCEPTION}}</p>
+                    </div>
+                </div>
+            </td>
+        </tr>
+        <tr class="email-footer">
+            <td>
+                <div class="email-section">
+                    <p>{{STACK_TRACE}}</p>
+                </div>
+            </td>
+        </tr>
+    </table>
 </div>
-<main class="email-container">
-    <div class="email-section" id="div-body">
-        <div id="div-logo">
-            <a href="{{WEB_APP_HOST}}">
-                <img src="https://khd5028k-dev.nyc3.cdn.digitaloceanspaces.com/BRECKS/BRECKS-v2.png" width="300" alt="BRECKS">
-            </a>
-        </div>
-        <div class="hero" id="div-message">
-            <div>
-                <h3>A critical error has occurred!</h3>
-                <p class="text">{{EXCEPTION}}</p>
-            </div>
-        </div>
-    </div>
-    <div class="email-section">
-        <p>{{STACK_TRACE}}</p>
-    </div>
-</main>
 </body>
 </html>

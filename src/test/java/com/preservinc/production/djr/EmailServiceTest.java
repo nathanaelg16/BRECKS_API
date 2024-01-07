@@ -18,11 +18,14 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.env.Environment;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.io.File;
+import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -67,7 +70,7 @@ public class EmailServiceTest {
 
     @Test
     void testNotifyReportSubmission() {
-        Employee employee = new Employee(1, "1", "Bob", "Smith", "Bobert", "PM", "nathanaelg16@gmail.com", false);
+        Employee employee = new Employee(1, "1", "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false);
         Team team = new Team(1, employee);
 
         Report report = new Report();
@@ -75,6 +78,17 @@ public class EmailServiceTest {
         report.setReportDate(LocalDate.now(ZoneId.of("America/New_York")));
 
         assertDoesNotThrow(() -> emailService.sendReportSubmissionNotification(report, new Job(1, "123 Main St", null, null, JobStatus.ACTIVE, team)));
+    }
+
+    @Test
+    void testSendReportSubmission() throws URISyntaxException {
+        Employee employee = new Employee(1, "1", "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false);
+
+        Team team = new Team(1, employee);
+
+        File report = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sampleReport.pdf")).toURI());
+
+        assertDoesNotThrow(() -> emailService.sendReportEmail(employee, new Job(1, "123 Main St", null, null, JobStatus.ACTIVE, team), LocalDate.now(), report));
     }
 
     @AfterEach

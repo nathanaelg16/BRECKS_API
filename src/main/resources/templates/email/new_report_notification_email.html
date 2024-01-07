@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-    <!--<link rel="stylesheet" href="resets.css"/>-->
-    <!--<link rel="stylesheet" href="styles.css"/>-->
+    <link rel="stylesheet" href="resets.css"/>
+    <link rel="stylesheet" href="styles.css"/>
     <style>
         {{CSS_RESETS}}
     </style>
@@ -20,27 +20,50 @@
     </style>
 </head>
 <body>
-<div id="prerender">
-    {{AUTHOR}} has submitted a new job report for {{ADDRESS}}!<br/><br/><br/><br/><br/>
-</div>
-<main class="email-container">
-    <div class="email-section" id="div-body">
-        <div id="div-logo">
-            <a href="{{WEB_APP_HOST}}">
-                <img src="https://khd5028k-dev.nyc3.cdn.digitaloceanspaces.com/BRECKS/BRECKS-v2.png" width="300" alt="BRECKS">
-            </a>
-        </div>
-        <div class="hero" id="div-message">
-            <div>
-                <h3>{{AUTHOR}} has submitted a new job report for <a href="{{WEB_APP_HOST}}/job/{{JOB_ID}}">{{ADDRESS}}</a></h3>
-                <a href="{{WEB_APP_HOST}}/job/{{JOB_ID}}/report/{{REPORT_DATE_ID}}">Click here to view</a>
-                <p>Report Date: {{DATE}}</p>
-            </div>
-        </div>
+    <div class="email-container">
+        <table role="presentation">
+            <tr class="email-header">
+                <td>
+                    <div class="logo">
+                        <a href="{{WEB_APP_HOST}}">
+                            <img src="https://khd5028k-dev.nyc3.cdn.digitaloceanspaces.com/BRECKS/BRECKS-v2.png" width="300" alt="BRECKS">
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            <tr class="email-body">
+                <td>
+                    <div class="email-section" id="div-body">
+                        <div class="hero">
+                            <table class="nested" role="presentation">
+                                <tr>
+                                    <td style="display: flex;">
+                                        <h3 style="margin: 10px auto;">{{AUTHOR}} has submitted a new job report for <a href="{{WEB_APP_HOST}}/job/{{JOB_ID}}">{{ADDRESS}}</a></h3>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="display: flex;">
+                                        <a style="margin: 10px auto;" href="{{WEB_APP_HOST}}/job/{{JOB_ID}}/report/{{REPORT_DATE_ID}}">Click here to view</a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="display: flex;">
+                                        <p style="margin: 10px auto;">Report Date: {{DATE}}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr class="email-footer">
+                <td>
+                    <div class="email-section footer" id="div-footer">
+                        <a class="text link" href="{{WEB_APP_HOST}}/preferences">Update subscription preferences</a>
+                    </div>
+                </td>
+            </tr>
+        </table>
     </div>
-    <div class="email-section footer" id="div-footer">
-        <a class="text link" href="{{WEB_APP_HOST}}/preferences">Update subscription preferences</a>
-    </div>
-</main>
 </body>
 </html>
