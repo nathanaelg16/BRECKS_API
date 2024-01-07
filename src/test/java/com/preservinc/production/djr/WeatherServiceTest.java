@@ -1,23 +1,28 @@
 package com.preservinc.production.djr;
 
+import com.preservinc.production.djr.model.Employee;
 import com.preservinc.production.djr.model.Report;
+import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.weather.Weather;
 import com.preservinc.production.djr.service.email.IEmailService;
 import com.preservinc.production.djr.service.weather.WeatherService;
+import jakarta.mail.MessagingException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.io.File;
+import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.chrono.ChronoLocalDateTime;
-import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -28,11 +33,11 @@ public class WeatherServiceTest {
     private WeatherService weatherService;
 
     @Autowired
-    private Properties config;
+    private Environment env;
 
-    class EmailServiceMock implements IEmailService {
+    static class EmailServiceMock implements IEmailService {
         @Override
-        public void sendReportEmail(File report) {
+        public void sendReportEmail(Employee author, Job job, LocalDate reportDate, File report) throws SQLException, IOException, MessagingException {
             // TODO: Implement this
         }
 
@@ -50,7 +55,7 @@ public class WeatherServiceTest {
 
     @BeforeEach
     void setUp() {
-        weatherService = new WeatherService(new EmailServiceMock(), config);
+        weatherService = new WeatherService(new EmailServiceMock(), env);
     }
 
     @Test

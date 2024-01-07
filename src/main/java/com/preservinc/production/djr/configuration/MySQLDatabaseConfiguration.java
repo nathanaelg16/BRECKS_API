@@ -5,33 +5,29 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 
 import javax.sql.DataSource;
-import java.util.Properties;
 
 @Configuration
+@PropertySource("classpath:database-${spring.profiles.active}.properties")
 public class MySQLDatabaseConfiguration {
     private static final Logger logger = LogManager.getLogger();
-    private final Properties config;
-
-    @Autowired
-    public MySQLDatabaseConfiguration(Properties config) {
-        this.config = config;
-    }
 
     @Bean
-    public DataSource getDataSource() {
+    public DataSource getDataSource(@Value("${mysql.username}") String username,
+                                    @Value("${mysql.password}") String password,
+                                    @Value("${mysql.host}") String host,
+                                    @Value("${mysql.port}") String port,
+                                    @Value("${mysql.db}") String database,
+                                    @Value("${mysql.options}") String options)
+    {
         logger.info("[MySQL Database Configuration] Initializing HikariCP data source...");
-        String username = config.getProperty("mysql.username");
-        String password = config.getProperty("mysql.password");
-        String DB_HOST = config.getProperty("mysql.host");
-        String DB_PORT = config.getProperty("mysql.port");
-        String DB_NAME = config.getProperty("mysql.db");
-        String DB_OPTIONS = config.getProperty("mysql.options");
-        String DB_CONNECTION_URL = String.format("jdbc:mysql://%s:%s/%s%s", DB_HOST, DB_PORT, DB_NAME, DB_OPTIONS);
+
+        String DB_CONNECTION_URL = String.format("jdbc:mysql://%s:%s/%s%s", host, port, database, options);
 
         HikariConfig hikariConfig = getHikariConfig(DB_CONNECTION_URL, username, password);
 

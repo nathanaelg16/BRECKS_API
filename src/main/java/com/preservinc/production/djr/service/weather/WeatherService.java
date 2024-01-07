@@ -11,6 +11,7 @@ import com.preservinc.production.djr.service.email.IEmailService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -22,7 +23,6 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +32,7 @@ import java.util.function.Function;
 public class WeatherService implements IWeatherService {
     private static final Logger logger = LogManager.getLogger();
     private final IEmailService emailService;
-    private final Properties config;
+    private final Environment env;
     private final HttpClient client;
     private LocalDateTime lastUpdate;
     private Weather weather;
@@ -40,9 +40,9 @@ public class WeatherService implements IWeatherService {
     private LocalDateTime rateLimitExceededTimestamp;
 
     @Autowired
-    public WeatherService(IEmailService emailService, Properties config) {
+    public WeatherService(IEmailService emailService, Environment env) {
         this.emailService = emailService;
-        this.config = config;
+        this.env = env;
         this.client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(Duration.ofSeconds(10)).build();
         this.fetchWeather();
     }
@@ -56,12 +56,12 @@ public class WeatherService implements IWeatherService {
     public Weather getWeatherOnDate(LocalDate date) {
         logger.info("[Weather Service] Fetching weather for date %s...".formatted(date.toString()));
 
-        String CONDITION_ENDPOINT = config.getProperty("weather.timeMachine.condition.endpoint");
-        String MIN_MAX_TEMP_ENDPOINT = config.getProperty("weather.timeMachine.minMaxTemp.endpoint");
-        String LAT = config.getProperty("weather.lat");
-        String LON = config.getProperty("weather.lon");
-        String UNITS = config.getProperty("weather.units");
-        String APPID = config.getProperty("weather.appid");
+        String CONDITION_ENDPOINT = env.getProperty("weather.timeMachine.condition.endpoint");
+        String MIN_MAX_TEMP_ENDPOINT = env.getProperty("weather.timeMachine.minMaxTemp.endpoint");
+        String LAT = env.getProperty("weather.lat");
+        String LON = env.getProperty("weather.lon");
+        String UNITS = env.getProperty("weather.units");
+        String APPID = env.getProperty("weather.appid");
         String DATETIME = String.valueOf(ZonedDateTime.of(date.atTime(12, 0, 0), ZoneId.of("America/New_York")).toEpochSecond());
         String TZ = ZoneId.of("America/New_York").getRules().getOffset(date.atTime(12, 0, 0)).toString();
 
@@ -123,11 +123,11 @@ public class WeatherService implements IWeatherService {
     private void fetchWeather() {
         logger.info("[Weather Service] Fetching weather...");
 
-        String ENDPOINT = config.getProperty("weather.endpoint");
-        String LAT = config.getProperty("weather.lat");
-        String LON = config.getProperty("weather.lon");
-        String UNITS = config.getProperty("weather.units");
-        String APPID = config.getProperty("weather.appid");
+        String ENDPOINT = env.getProperty("weather.endpoint");
+        String LAT = env.getProperty("weather.lat");
+        String LON = env.getProperty("weather.lon");
+        String UNITS = env.getProperty("weather.units");
+        String APPID = env.getProperty("weather.appid");
 
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(String.format("%s?lat=%s&lon=%s&units=%s&appid=%s", ENDPOINT, LAT, LON, UNITS, APPID))).timeout(Duration.ofSeconds(10)).GET().build();
 

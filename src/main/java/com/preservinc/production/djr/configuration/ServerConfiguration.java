@@ -11,41 +11,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.io.IOException;
-import java.util.Properties;
-
-// todo change config-*.properties files to be all in the application-*.properties so that they can be injected
-
 @Configuration
 public class ServerConfiguration implements WebMvcConfigurer {
     private final AuthenticationInterceptor authenticationInterceptor;
-    private final Properties config;
 
-    public ServerConfiguration(@Autowired AuthenticationInterceptor authenticationInterceptor, @Value("${spring.profiles.active}") String activeProfile) throws IOException {
+    @Value("${webapp.host}")
+    private String WEB_APP_HOST;
+
+    public ServerConfiguration(@Autowired AuthenticationInterceptor authenticationInterceptor) {
         this.authenticationInterceptor = authenticationInterceptor;
-        this.config = new Properties();
-        this.config.load(new ClassPathResource("config-%s.properties".formatted(activeProfile)).getInputStream());
-    }
-
-
-    @Bean("config")
-    public Properties loadConfig() {
-        return this.config;
     }
 
     @Bean("spaces")
-    public AmazonS3 buildSpaces() {
-        final String endpoint = config.getProperty("spaces.endpoint");
-        final String secret = config.getProperty("spaces.secret");
-        final String key = config.getProperty("spaces.key");
+    public AmazonS3 buildSpaces(@Value("${spaces.endpoint}") String endpoint,
+                                @Value("${spaces.secret}") String secret,
+                                @Value("${spaces.key}") String key)
+    {
         return AmazonS3Client.builder()
                 .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration(endpoint, Regions.US_EAST_1.getName()))
                 .withCredentials(new AWSStaticCredentialsProvider(new BasicAWSCredentials(key, secret)))
+                .withPayloadSigningEnabled(true)
                 .build();
     }
 
@@ -57,6 +46,6 @@ public class ServerConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins(this.config.getProperty("webapp.host"));
+                .allowedOrigins(WEB_APP_HOST);
     }
 }
