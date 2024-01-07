@@ -17,6 +17,7 @@ import com.preservinc.production.djr.model.weather.Weather;
 import com.preservinc.production.djr.service.email.IEmailService;
 import com.preservinc.production.djr.service.weather.IWeatherService;
 import jakarta.mail.MessagingException;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -92,7 +93,7 @@ public class ReportService {
 
             report.setReportBy(reportingUser);
             report.setPM(job.team().getProjectManager());
-            reportsDAO.saveReport(report); //todo uncomment
+            reportsDAO.saveReport(report);
 
             File reportPDF = null;
 
@@ -101,12 +102,12 @@ public class ReportService {
                 emailService.sendReportEmail(reportingUser, job, report.getReportDate(), reportPDF);
             } catch (SQLException | RuntimeException | IOException e) {
                 logger.error("[Report Service] Error generating PDF: {}", e.getMessage());
-                e.printStackTrace(); // todo remove this line
+                logger.error(ExceptionUtils.getStackTrace(e));
                 try { emailService.sendReportSubmissionNotification(report, job); }
                 catch (Exception ignored) {}
             } catch (MessagingException e) {
                 logger.error("[Report Service] An error occurred delivering the message: {}", e.getMessage());
-                e.printStackTrace(); // todo remove this line
+                logger.error(ExceptionUtils.getStackTrace(e));
                 try { emailService.sendReportSubmissionNotification(report, job); }
                 catch (Exception ignored) {}
             } finally {
@@ -116,7 +117,6 @@ public class ReportService {
                     reportPDF.deleteOnExit();
                 }
             }
-
         } catch (SQLException e) {
             throw new ServerException(e);
         }
