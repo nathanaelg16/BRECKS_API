@@ -38,4 +38,5 @@ src/main/resources/*.properties
 
 ### Firebase ###
 ui-debug.log
+firebase-debug.log
 .firebase/
