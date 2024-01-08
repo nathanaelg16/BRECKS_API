@@ -2,7 +2,7 @@ package com.preservinc.production.djr.controller;
 
 import com.google.firebase.auth.FirebaseToken;
 import com.preservinc.production.djr.model.Report;
-import com.preservinc.production.djr.service.ReportService;
+import com.preservinc.production.djr.service.report.ReportService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/report")
+@RequestMapping("/reports")
 public class ReportsController {
     private static final Logger logger = LogManager.getLogger();
 

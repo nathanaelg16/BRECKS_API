@@ -1,4 +1,4 @@
-package com.preservinc.production.djr.service;
+package com.preservinc.production.djr.service.report;
 
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
@@ -40,7 +40,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 @Service
-public class ReportService {
+public class ReportService implements IReportService {
     private static final Logger logger = LogManager.getLogger();
 
     private final Environment env;
@@ -64,6 +64,7 @@ public class ReportService {
         this.spaces = spaces;
     }
 
+    @Override
     public void submitReport(FirebaseToken firebaseToken, Report report) {
         logger.info("[Report Service] Handling report for job site ID {} submitted by {}", report.getJobID(), firebaseToken.getName());
         validateReport(report);
