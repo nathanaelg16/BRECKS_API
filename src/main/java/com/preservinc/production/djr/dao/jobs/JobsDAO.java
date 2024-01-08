@@ -12,6 +12,8 @@ import org.springframework.stereotype.Repository;
 import javax.sql.DataSource;
 import java.sql.*;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 
 @Repository
@@ -69,6 +71,56 @@ public class JobsDAO implements IJobsDAO {
                     return null;
                 }
             }
+        }
+    }
+
+    @Override
+    public void insertJob(String address, LocalDate startDate, int teamID, JobStatus status) throws SQLException {
+        logger.info("[JobsDAO] Inserting new job...");
+        try (Connection c = this.dataSource.getConnection();
+             PreparedStatement p = c.prepareStatement("insert into Jobs (address, team_id, start_date, status) value (?, ?, ?, ?);")
+        ) {
+            p.setString(1, address);
+            p.setInt(2, teamID);
+            p.setDate(3, Date.valueOf(startDate));
+            p.setString(4, status.getStatus());
+            p.executeUpdate();
+        }
+    }
+
+    @Override
+    public void updateJobStatus(Integer id, JobStatus status) throws SQLException {
+        logger.info("[JobsDAO] Updating job status...");
+        try (Connection c = this.dataSource.getConnection();
+             PreparedStatement p = c.prepareStatement("update Jobs set status = ? where id = ?;")
+        ) {
+            p.setString(1, status.getStatus());
+            p.setInt(2, id);
+            p.executeUpdate();
+        }
+    }
+
+    @Override
+    public List<Job> search(Integer teamID, LocalDate startDate, LocalDate endDate, JobStatus status) throws SQLException {
+        logger.info("""
+                [JobsDAO] Searching for jobs with the following params:
+                \tid: {}
+                \tstartDate: {}
+                \tendDate: {}
+                \tstatus: {}""", teamID, startDate, endDate, status);
+
+        String query = "select J.*, T.pm from Jobs J inner join Teams T on J.team_id = T.id";
+        StringBuilder whereClauseBuilder = new StringBuilder();
+
+        if (teamID != null) whereClauseBuilder.append("J.team_id = ? ");
+
+        if (startDate != null) whereClauseBuilder.append("J.startDate >= ? ");
+
+        List<Job> results = new ArrayList<>();
+        try (Connection c = this.dataSource.getConnection();
+             PreparedStatement p = c.prepareStatement();
+        ) {
+
         }
     }
 }
