@@ -1,21 +1,21 @@
 package com.preservinc.production.djr.request;
 
 import com.preservinc.production.djr.model.job.JobStatus;
-import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-@Getter
 @Setter
 public class StatusChangeRequest implements Request {
-    private Integer id;
     private String status;
+
+    public JobStatus getStatus() {
+        return  JobStatus.of(status);
+    }
 
     @Override
     public boolean isWellFormed() {
-        if (id == null) return false;
         if (status == null) return false;
 
         try {
@@ -35,18 +35,17 @@ public class StatusChangeRequest implements Request {
 
         StatusChangeRequest that = (StatusChangeRequest) o;
 
-        return new EqualsBuilder().append(getId(), that.getId()).append(getStatus(), that.getStatus()).isEquals();
+        return new EqualsBuilder().append(status, that.status).isEquals();
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(getId()).append(getStatus()).toHashCode();
+        return new HashCodeBuilder(17, 37).append(status).toHashCode();
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("id", id)
                 .append("status", status)
                 .toString();
     }

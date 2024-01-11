@@ -1,9 +1,11 @@
 package com.preservinc.production.djr.dao.jobs;
 
 import com.preservinc.production.djr.dao.teams.ITeamsDAO;
+import com.preservinc.production.djr.model.Employee;
 import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.job.JobStatus;
 import com.preservinc.production.djr.model.team.Team;
+import com.preservinc.production.djr.util.function.CheckedBiConsumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,9 +13,9 @@ import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
 import java.sql.*;
+import java.sql.Date;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.function.Function;
 
 @Repository
@@ -101,26 +103,79 @@ public class JobsDAO implements IJobsDAO {
     }
 
     @Override
-    public List<Job> search(Integer teamID, LocalDate startDate, LocalDate endDate, JobStatus status) throws SQLException {
+    public List<Job> search(final Integer teamID, final LocalDate startDateAfter,
+                            final LocalDate startDateBefore, final LocalDate endDateAfter,
+                            final LocalDate endDateBefore, final JobStatus status) throws SQLException {
         logger.info("""
                 [JobsDAO] Searching for jobs with the following params:
                 \tid: {}
-                \tstartDate: {}
-                \tendDate: {}
-                \tstatus: {}""", teamID, startDate, endDate, status);
+                \tstartDateAfter: {}
+                \tstartDateBefore: {}
+                \tendDateAfter: {}
+                \tendDateBefore: {}
+                \tstatus: {}""", teamID, startDateAfter, startDateBefore, endDateAfter, endDateBefore, status);
 
-        String query = "select J.*, T.pm from Jobs J inner join Teams T on J.team_id = T.id";
-        StringBuilder whereClauseBuilder = new StringBuilder();
+        StringBuilder queryBuilder = new StringBuilder("select J.*, T.pm from Jobs J inner join Teams T on J.team_id = T.id where 1=1");
+        List<CheckedBiConsumer<PreparedStatement, Integer, SQLException>> paramSetters = new ArrayList<>();
 
-        if (teamID != null) whereClauseBuilder.append("J.team_id = ? ");
+        if (teamID != null) {
+            queryBuilder.append(" and J.team_id = ?");
+            paramSetters.add((p, i) -> p.setInt(i, teamID));
+        }
 
-        if (startDate != null) whereClauseBuilder.append("J.startDate >= ? ");
+        if (startDateAfter != null) {
+            queryBuilder.append(" and J.start_date >= ?");
+            paramSetters.add((p, i) -> p.setDate(i, Date.valueOf(startDateAfter)));
+        }
+
+        if (startDateBefore != null) {
+            queryBuilder.append(" and J.start_date <= ?");
+            paramSetters.add((p, i) -> p.setDate(i, Date.valueOf(startDateBefore)));
+        }
+
+        if (endDateAfter != null) {
+            queryBuilder.append(" and J.end_date >= ?");
+            paramSetters.add((p, i) -> p.setDate(i, Date.valueOf(endDateAfter)));
+        }
+
+        if (endDateBefore != null) {
+            queryBuilder.append(" and J.end_date <= ?");
+            paramSetters.add((p, i) -> p.setDate(i, Date.valueOf(endDateBefore)));
+        }
+
+        if (status != null) {
+            queryBuilder.append(" and status = ?");
+            paramSetters.add((p, i) -> p.setString(i, status.getStatus()));
+        }
+
+        queryBuilder.append(";");
 
         List<Job> results = new ArrayList<>();
-        try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p = c.prepareStatement();
-        ) {
 
+        try (Connection c = this.dataSource.getConnection();
+             PreparedStatement p = c.prepareStatement(queryBuilder.toString())
+        ) {
+            for (int i = 0; i < paramSetters.size();) paramSetters.get(i).accept(p, ++i);
+            logger.info("SQL QUERY: {}", p);
+            try (ResultSet r = p.executeQuery()) {
+                while (r.next()) {
+                    Optional<Date> rStartDate = Optional.ofNullable(r.getDate("start_date"));
+                    Optional<Date> rEndDate = Optional.ofNullable(r.getDate("end_date"));
+                    results.add(new Job(r.getInt("id"),
+                            r.getString("address"),
+                            rStartDate.map(Date::toLocalDate).orElse(null),
+                            rEndDate.map(Date::toLocalDate).orElse(null),
+                            JobStatus.of(r.getString("status")),
+                            new Team(r.getInt("team_id"),
+                                    new Employee(r.getInt("pm"), null, null, null,
+                                            null, null, null, null
+                                    )
+                            )
+                    ));
+                }
+            }
         }
+
+        return results;
     }
 }

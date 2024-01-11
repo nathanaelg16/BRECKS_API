@@ -1,4 +1,4 @@
-package com.preservinc.production.djr;
+package com.preservinc.production.djr.service;
 
 import com.preservinc.production.djr.model.Employee;
 import com.preservinc.production.djr.model.Report;

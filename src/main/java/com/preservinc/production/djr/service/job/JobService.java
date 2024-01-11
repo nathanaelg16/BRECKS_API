@@ -5,7 +5,6 @@ import com.preservinc.production.djr.exception.ServerException;
 import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.job.JobStatus;
 import com.preservinc.production.djr.request.CreateJobSiteRequest;
-import com.preservinc.production.djr.request.StatusChangeRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,23 +29,29 @@ public class JobService implements IJobService {
     @Override
     public List<Job> searchUsingFilters(Map<String, String> params) throws ServerException {
         String teamIDString = params.get("teamID");
-        String startDateString = params.get("startDate");
-        String endDateString = params.get("endDate");
+        String startDateAfterString = params.get("startDateAfter");
+        String startDateBeforeString = params.get("startDateBefore");
+        String endDateAfterString = params.get("endDateAfter");
+        String endDateBeforeString = params.get("endDateBefore");
         String statusString = params.get("status");
 
         logger.info("""
                 [Job Service] searching for jobs with the following filters:
                 teamID: {}
-                startDate: {}
-                endDate: {}
-                status: {}""", teamIDString, startDateString, endDateString, statusString);
+                startDateAfter: {}
+                startDateBefore: {}
+                endDateAfter: {}
+                endDateBefore: {}
+                status: {}""", teamIDString, startDateAfterString, startDateBeforeString, endDateAfterString, endDateBeforeString, statusString);
 
         try {
             Integer teamID = (teamIDString != null && !teamIDString.isBlank()) ? Integer.valueOf(teamIDString) : null;
-            LocalDate startDate = (startDateString != null && !startDateString.isBlank()) ? LocalDate.parse(startDateString) : null;
-            LocalDate endDate = (endDateString != null && !endDateString.isBlank()) ? LocalDate.parse(endDateString) : null;
+            LocalDate startDateAfter = (startDateAfterString != null && !startDateAfterString.isBlank()) ? LocalDate.parse(startDateAfterString) : null;
+            LocalDate startDateBefore = (startDateBeforeString != null && !startDateBeforeString.isBlank()) ? LocalDate.parse(startDateBeforeString) : null;
+            LocalDate endDateAfter = (endDateAfterString != null && !endDateAfterString.isBlank()) ? LocalDate.parse(endDateAfterString) : null;
+            LocalDate endDateBefore = (endDateBeforeString != null && !endDateBeforeString.isBlank()) ? LocalDate.parse(endDateBeforeString) : null;
             JobStatus status = (statusString != null && !statusString.isBlank()) ? JobStatus.of(statusString) : null;
-            return this.jobsDAO.search(teamID, startDate, endDate, status);
+            return this.jobsDAO.search(teamID, startDateAfter, startDateBefore, endDateAfter, endDateBefore, status);
         } catch (SQLException | RuntimeException e) {
             logger.error(e);
             throw new ServerException(e);
@@ -64,13 +69,11 @@ public class JobService implements IJobService {
     }
 
     @Override
-    public boolean changeJobStatus(StatusChangeRequest request) {
-        logger.info("[Job Service] Changing job status for job with id {} to {}", request.getId(), request.getStatus());
-
-        JobStatus status = JobStatus.of(request.getStatus());
+    public boolean changeJobStatus(int id, JobStatus status) {
+        logger.info("[Job Service] Changing job status for job with id {} to {}", id, status);
 
         try {
-            this.jobsDAO.updateJobStatus(request.getId(), status);
+            this.jobsDAO.updateJobStatus(id, status);
         } catch (SQLException e) {
             logger.error(e);
             return false;
