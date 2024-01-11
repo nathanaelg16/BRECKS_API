@@ -35,8 +35,12 @@ build/
 ### Project Configuration Files ###
 src/main/resources/serviceAccountKey.json
 src/main/resources/*.properties
+src/main/resources/application.yml
 
 ### Firebase ###
 ui-debug.log
 firebase-debug.log
 .firebase/
+
+### H2 DB Config Files
+/src/test/resources/*.sql
