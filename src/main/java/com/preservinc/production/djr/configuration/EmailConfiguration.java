@@ -6,7 +6,6 @@ import jakarta.mail.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.env.Environment;
 
 import java.util.ArrayList;
@@ -14,7 +13,6 @@ import java.util.List;
 import java.util.Properties;
 
 @Configuration
-@PropertySource("classpath:email-${spring.profiles.active}.properties")
 public class EmailConfiguration {
     private static final List<String> SMTP_PROPERTIES;
 

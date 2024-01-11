@@ -7,7 +7,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.core.io.ClassPathResource;
 
 import javax.annotation.PostConstruct;
@@ -15,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 @Configuration
-@PropertySource("classpath:s3-${spring.profiles.active}.properties")
 public class FirebaseConfiguration {
     @PostConstruct
     public void instantiateFirebase() throws IOException {
