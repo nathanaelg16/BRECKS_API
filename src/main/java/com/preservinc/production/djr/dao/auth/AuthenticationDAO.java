@@ -1,10 +1,8 @@
 package com.preservinc.production.djr.dao.auth;
 
-import com.preservinc.production.djr.exception.auth.DatabaseException;
+import com.preservinc.production.djr.exception.DatabaseException;
 import com.preservinc.production.djr.model.auth.User;
 import com.preservinc.production.djr.model.auth.UserStatus;
-import com.preservinc.production.djr.request.auth.UserRegistration;
-import com.preservinc.production.djr.response.RegistrationResponse;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -74,7 +72,7 @@ public class AuthenticationDAO implements IAuthenticationDAO {
     @Override
     public boolean registerUser(@NonNull String email, @NonNull String username, @NonNull String displayName,
                                 @NonNull String password, @NonNull String salt) throws SQLException {
-        logger.info("[Auth DAO] Attempting to register user with email: {}", userRegistration.getEmail());
+        logger.info("[Auth DAO] Attempting to register user with email: {}", email);
         try (Connection c = this.dataSource.getConnection();
              PreparedStatement p = c.prepareStatement("update Employees set display_name = ?, username = ?, " +
                      "password = ?, salt = ?, registration_ts = CURRENT_TIMESTAMP() where email = ?;")

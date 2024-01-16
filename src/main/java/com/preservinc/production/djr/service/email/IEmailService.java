@@ -16,4 +16,5 @@ public interface IEmailService {
     void sendReportSubmissionNotification(Report report, Job job) throws SQLException, IOException, MessagingException;
     void notifySysAdmin(Throwable ex);
     void sendPasswordResetEmail(@NonNull String email);
+    void notifyAccountCreation(String email) throws MessagingException, IOException;
 }

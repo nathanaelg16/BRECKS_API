@@ -1,7 +1,8 @@
 package com.preservinc.production.djr.interceptor;
 
+import com.preservinc.production.djr.auth.AuthorizationToken;
 import com.preservinc.production.djr.auth.RevokedTokens;
-import com.preservinc.production.djr.util.function.Constants;
+import com.preservinc.production.djr.util.Constants;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -58,13 +59,12 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         String authorizationType = authorizationTypeAndToken[0].strip();
         String authorizationToken = authorizationTypeAndToken[1].strip();
         if (authorizationType.equals(AuthorizationType.BEARER.toString())) {
-            Jws<Claims> claims = verifyToken(authorizationToken);
-            if (claims != null) {
-                request.setAttribute("claims", claims);
+            AuthorizationToken token = new AuthorizationToken(authorizationToken);
+            if (verifyToken(token)) {
+                request.setAttribute("token", token);
                 return true;
             } else response.sendError(401, "Invalid authentication token");
-        }
-        else {
+        } else {
             logger.info("Unsupported authorization type: {}", authorizationType);
             response.sendError(401, "Unsupported authorization type");
         }
@@ -82,15 +82,17 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         if (request.getRequestURI().equals("/validate")) attemptTokenRenewal(request, response);
     }
 
-    private Jws<Claims> verifyToken(String token) {
+    private boolean verifyToken(AuthorizationToken token) {
         logger.info("[Auth Interceptor] Verifying token authentication: {}", token);
-        if (this.revokedTokens.contains(token)) return null;
+        if (this.revokedTokens.contains(token)) return false;
         try {
-            return this.jwtParser.parseSignedClaims(token);
+            this.jwtParser.parseSignedClaims(token.token());
+            return true;
         } catch (UnsupportedJwtException | MalformedJwtException | SignatureException | ExpiredJwtException | IllegalArgumentException e) {
             logger.info("Exception occurred parsing JWT token: {}", e.getMessage());
-            return null;
         }
+
+        return false;
     }
 
     private void attemptTokenRenewal(HttpServletRequest request, HttpServletResponse response) throws Exception {

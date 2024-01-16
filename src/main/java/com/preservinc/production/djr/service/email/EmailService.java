@@ -116,6 +116,26 @@ public class EmailService implements IEmailService {
     }
 
     @Override
+    public void notifyAccountCreation(@NonNull String email) throws MessagingException, IOException {
+        logger.info("[Email Service] Notifying user with email `{}` that they have been added to the platform...", email);
+
+        MimeBodyPart body = new MimeBodyPart();
+        String emailTemplate = loadTemplate("templates/email/account_creation_notification_email.html", "templates/email/styles.css")
+                .replace("{{WEB_APP_HOST}}", "")
+                .replace("{{LINK}}", Objects.requireNonNull(env.getProperty("webapp.host")));
+        body.setContent(emailTemplate, "text/html; charset=utf-8");
+
+        Envelope.Builder(this.session)
+                .subject("Welcome to BRECKS")
+                .replyTo("noreply@brecks.app")
+                .sendTo(email)
+                .withPart(body)
+                .send();
+
+        logger.info("[Email Service] Notification sent!");
+    }
+
+    @Override
     public void sendPasswordResetEmail(@NonNull String email) {
         // todo implement method
     }

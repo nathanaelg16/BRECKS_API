@@ -1,11 +1,11 @@
 package com.preservinc.production.djr.controller
 
 import com.preservinc.production.djr.auth.AuthorizationToken
-import com.preservinc.production.djr.exception.auth.DatabaseException
+import com.preservinc.production.djr.exception.DatabaseException
 import com.preservinc.production.djr.request.auth.UserLoginRequest
 import com.preservinc.production.djr.request.auth.UserRegistration
 import com.preservinc.production.djr.response.ErrorResponse
-import com.preservinc.production.djr.service.authorization.AuthorizationService
+import com.preservinc.production.djr.service.authorization.IAuthorizationService
 import org.apache.logging.log4j.LogManager
 import org.apache.logging.log4j.Logger
 import org.springframework.beans.factory.annotation.Autowired
@@ -15,7 +15,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-class AuthenticationController @Autowired constructor(private val authorizationService: AuthorizationService) {
+class AuthenticationController @Autowired constructor(private val authorizationService: IAuthorizationService) {
 
     @PostMapping("/login")
     fun  login(@RequestBody userLogin: UserLoginRequest) : ResponseEntity<AuthorizationToken> {

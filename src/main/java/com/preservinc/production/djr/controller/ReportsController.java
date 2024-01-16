@@ -23,7 +23,7 @@ public class ReportsController {
     }
 
     @PostMapping
-    public ResponseEntity<Object> submitNewJobReport(@RequestAttribute("AuthorizationToken") AuthorizationToken authorizationToken, @RequestBody Report report) {
+    public ResponseEntity<Object> submitNewJobReport(@RequestAttribute("token") AuthorizationToken authorizationToken, @RequestBody Report report) {
         logger.info("[Reports Controller] Received new job report for job ID {} submitted by {}", report.getJobID(), authorizationToken);
         try {
             reportService.submitReport(authorizationToken, report);

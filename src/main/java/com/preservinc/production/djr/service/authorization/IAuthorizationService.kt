@@ -1,6 +1,7 @@
 package com.preservinc.production.djr.service.authorization
 
 import com.preservinc.production.djr.auth.AuthorizationToken
+import com.preservinc.production.djr.model.auth.User
 import com.preservinc.production.djr.request.auth.UserLoginRequest
 import com.preservinc.production.djr.request.auth.UserRegistration
 
@@ -15,7 +16,7 @@ interface IAuthorizationService {
     fun hexEncode(str: String): String
     fun generateSalt(): String
     fun compareHashes(hash: String, userHash: String): Boolean
-    fun generateAuthorizationToken(username: String): String
+    fun generateAuthorizationToken(user: User): AuthorizationToken
     fun saltPassword(password: String, salt: String): String
     fun pepperPassword(password: String): String
     fun resetPassword(userIdentification: String, identificationType: String)

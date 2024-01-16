@@ -1,4 +1,4 @@
-package com.preservinc.production.djr.exception.auth
+package com.preservinc.production.djr.exception
 
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ResponseStatus

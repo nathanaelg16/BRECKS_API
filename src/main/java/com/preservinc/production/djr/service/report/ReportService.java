@@ -3,9 +3,8 @@ package com.preservinc.production.djr.service.report;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.google.firebase.auth.FirebaseToken;
 import com.preservinc.production.djr.auth.AuthorizationToken;
-import com.preservinc.production.djr.dao.employees.IEmployeesDAO;
+import com.preservinc.production.djr.dao.employees.IEmployeeDAO;
 import com.preservinc.production.djr.dao.jobs.IJobsDAO;
 import com.preservinc.production.djr.dao.reports.IReportsDAO;
 import com.preservinc.production.djr.exception.ServerException;
@@ -15,14 +14,11 @@ import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.employee.Employee;
 import com.preservinc.production.djr.model.team.TeamMemberRole;
 import com.preservinc.production.djr.model.weather.Weather;
-import com.preservinc.production.djr.service.authorization.AuthorizationService;
-import com.preservinc.production.djr.service.authorization.IAuthorizationService;
 import com.preservinc.production.djr.service.email.IEmailService;
 import com.preservinc.production.djr.service.weather.IWeatherService;
 import io.jsonwebtoken.JwtParser;
 import jakarta.mail.MessagingException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.pdfbox.Loader;
@@ -52,13 +48,13 @@ public class ReportService implements IReportService {
     private final IEmailService emailService;
     private final IReportsDAO reportsDAO;
     private final IJobsDAO jobsDAO;
-    private final IEmployeesDAO employeesDAO;
+    private final IEmployeeDAO employeesDAO;
     private final AmazonS3 spaces;
     private final JwtParser jwtParser;
 
     @Autowired
     public ReportService(Environment env, IWeatherService weatherService, IEmailService emailService,
-                         IReportsDAO reportsDAO, IJobsDAO jobsDAO, IEmployeesDAO employeesDAO,
+                         IReportsDAO reportsDAO, IJobsDAO jobsDAO, IEmployeeDAO employeesDAO,
                          AmazonS3 spaces, JwtParser jwtParser) {
         this.env = env;
         this.weatherService = weatherService;
@@ -72,32 +68,24 @@ public class ReportService implements IReportService {
 
     @Override
     public void submitReport(AuthorizationToken authorizationToken, Report report) {
-        String tokenUser = this.jwtParser.parseSignedClaims(authorizationToken.token()).getPayload().getSubject();
-        logger.info("[Report Service] Handling report for job site ID {} submitted by {}", report.getJobID(), tokenUser);
+        Integer tokenUserID = this.jwtParser.parseSignedClaims(authorizationToken.token()).getPayload().get("userID", Integer.class);
+        logger.info("[Report Service] Handling report for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
         validateReport(report);
         checkWeather(report);
 
         try {
-            Employee reportingUser;
             Job job = jobsDAO.getJob(report.getJobID());
 
             if (job == null)
                 throw new InvalidJobSiteException();
 
             logger.info("[Report Service] Team PM: {}", job.team().getProjectManager().fullName());
-            // todo find tokenUser employee object, then check if member of team
-            Pair<Employee, TeamMemberRole> reportingUserAndRole = job.team().findTeamMemberByUsername(tokenUser);
-            if (reportingUserAndRole == null) {
-                logger.info("[Report Service] Reporting user is not a member of the assigned team.");
-                reportingUser = employeesDAO.findEmployeeByUsername(tokenUser);
-                report.setPS(job.team().findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0));
-            } else {
-                reportingUser = reportingUserAndRole.getLeft();
-                TeamMemberRole role = reportingUserAndRole.getRight();
-                if (role == TeamMemberRole.PROJECT_SUPERVISOR) report.setPS(reportingUser);
-                else report.setPS(job.team().findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0));
-                logger.debug("[Report Service] Reporting user is member of the team.");
-            }
+
+            Employee reportingUser = employeesDAO.findEmployeeByID(tokenUserID);
+            TeamMemberRole reportingUserRole = job.team().getTeamMembers().get(reportingUser);
+
+            if (reportingUserRole == TeamMemberRole.PROJECT_SUPERVISOR) report.setPS(reportingUser);
+            else report.setPS(job.team().findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0));
 
             report.setReportBy(reportingUser);
             report.setPM(job.team().getProjectManager());

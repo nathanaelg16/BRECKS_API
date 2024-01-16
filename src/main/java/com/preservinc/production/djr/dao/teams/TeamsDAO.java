@@ -34,7 +34,7 @@ public class TeamsDAO implements ITeamsDAO {
         Map<Employee, TeamMemberRole> teamMembers = new HashMap<>();
         try (Connection c = dataSource.getConnection();
              PreparedStatement p1 = c.prepareStatement("WITH team_pm AS (SELECT T.pm FROM Teams T WHERE T.id = ?) " +
-                     "SELECT E.id, E.firebase_uid AS uid, E.first_name, E.last_name, E.display_name, " +
+                     "SELECT E.id, E.first_name, E.last_name, E.display_name, " +
                             "E.role AS employee_role, E.email, E.admin, TM.role AS team_member_role, " +
                             "(SELECT IF(E.id = pm, 1, 0) FROM team_pm) AS is_pm " +
                      "FROM TeamMembers TM " +
@@ -46,7 +46,6 @@ public class TeamsDAO implements ITeamsDAO {
             try (ResultSet r1 = p1.executeQuery()) {
                 while (r1.next()) {
                     Employee employee = new Employee(r1.getInt("id"),
-                            r1.getString("uid"),
                             r1.getString("first_name"),
                             r1.getString("last_name"),
                             r1.getString("display_name"),
