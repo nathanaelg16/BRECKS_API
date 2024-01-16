@@ -2,7 +2,7 @@ package com.preservinc.production.djr.dao;
 
 import com.preservinc.production.djr.dao.jobs.JobsDAO;
 import com.preservinc.production.djr.dao.teams.ITeamsDAO;
-import com.preservinc.production.djr.model.Employee;
+import com.preservinc.production.djr.model.employee.Employee;
 import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.job.JobStatus;
 import com.preservinc.production.djr.model.team.Team;

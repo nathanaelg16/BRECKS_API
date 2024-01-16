@@ -1,4 +1,22 @@
-package com.preservinc.production.djr.service.authorization;
+package com.preservinc.production.djr.service.authorization
 
-public interface IAuthorizationService {
+import com.preservinc.production.djr.auth.AuthorizationToken
+import com.preservinc.production.djr.request.auth.UserLoginRequest
+import com.preservinc.production.djr.request.auth.UserRegistration
+
+interface IAuthorizationService {
+    fun authenticateUser(userLoginRequest: UserLoginRequest): AuthorizationToken?
+    fun registerUser(userRegistration: UserRegistration): AuthorizationToken?
+    fun checkUnique(username: String): Boolean
+    fun validatePassword(password: String): Boolean
+    fun setPassword(user: String, password: String)
+    fun hashPassword(salt: String, password: String): String
+    fun logout(authToken: AuthorizationToken): Boolean
+    fun hexEncode(str: String): String
+    fun generateSalt(): String
+    fun compareHashes(hash: String, userHash: String): Boolean
+    fun generateAuthorizationToken(username: String): String
+    fun saltPassword(password: String, salt: String): String
+    fun pepperPassword(password: String): String
+    fun resetPassword(userIdentification: String, identificationType: String)
 }

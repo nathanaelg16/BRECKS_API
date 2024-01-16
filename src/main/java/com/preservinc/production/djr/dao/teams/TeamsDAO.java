@@ -1,6 +1,6 @@
 package com.preservinc.production.djr.dao.teams;
 
-import com.preservinc.production.djr.model.Employee;
+import com.preservinc.production.djr.model.employee.Employee;
 import com.preservinc.production.djr.model.team.Team;
 import com.preservinc.production.djr.model.team.TeamMemberRole;
 import org.apache.logging.log4j.LogManager;

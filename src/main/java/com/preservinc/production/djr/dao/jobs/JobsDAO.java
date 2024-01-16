@@ -1,7 +1,7 @@
 package com.preservinc.production.djr.dao.jobs;
 
 import com.preservinc.production.djr.dao.teams.ITeamsDAO;
-import com.preservinc.production.djr.model.Employee;
+import com.preservinc.production.djr.model.employee.Employee;
 import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.job.JobStatus;
 import com.preservinc.production.djr.model.team.Team;
@@ -168,8 +168,7 @@ public class JobsDAO implements IJobsDAO {
                             JobStatus.of(r.getString("status")),
                             new Team(r.getInt("team_id"),
                                     new Employee(r.getInt("pm"), null, null, null,
-                                            null, null, null, null
-                                    )
+                                            null, null, null)
                             )
                     ));
                 }

@@ -1,6 +1,7 @@
-package com.preservinc.production.djr.request;
+package com.preservinc.production.djr.request.job;
 
 import com.preservinc.production.djr.model.job.JobStatus;
+import com.preservinc.production.djr.request.Request;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;

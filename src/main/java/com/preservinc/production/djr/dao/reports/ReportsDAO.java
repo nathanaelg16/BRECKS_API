@@ -1,6 +1,6 @@
 package com.preservinc.production.djr.dao.reports;
 
-import com.preservinc.production.djr.model.Report;
+import com.preservinc.production.djr.model.report.Report;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;

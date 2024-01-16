@@ -1,6 +1,6 @@
 package com.preservinc.production.djr.model.team;
 
-import com.preservinc.production.djr.model.Employee;
+import com.preservinc.production.djr.model.employee.Employee;
 import com.preservinc.production.djr.model.job.Job;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,10 +23,10 @@ public class Team {
         this.projectManager = projectManager;
     }
 
-    public Pair<Employee, TeamMemberRole> findTeamMemberByUID(String uid) {
+    public Pair<Employee, TeamMemberRole> findTeamMemberByID(int id) {
         return teamMembers.keySet()
                 .parallelStream()
-                .filter(employee -> employee.uid().equals(uid))
+                .filter(employee -> employee.id() == id)
                 .findFirst()
                 .map(employee -> Pair.of(employee, teamMembers.get(employee)))
                 .orElse(null);

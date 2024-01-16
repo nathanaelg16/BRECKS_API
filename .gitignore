@@ -44,3 +44,6 @@ firebase-debug.log
 
 ### H2 DB Config Files
 /src/test/resources/*.sql
+
+### Application Secrets ###
+src/main/java/com/preservinc/production/djr/service/authorization/AuthorizationService.kt

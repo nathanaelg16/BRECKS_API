@@ -1,7 +1,7 @@
 package com.preservinc.production.djr.service;
 
-import com.preservinc.production.djr.model.Employee;
-import com.preservinc.production.djr.model.Report;
+import com.preservinc.production.djr.model.employee.Employee;
+import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.weather.Weather;
 import com.preservinc.production.djr.service.email.IEmailService;

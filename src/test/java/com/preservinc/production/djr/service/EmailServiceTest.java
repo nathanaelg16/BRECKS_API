@@ -1,8 +1,8 @@
 package com.preservinc.production.djr.service;
 
 import com.preservinc.production.djr.dao.reports.IReportsDAO;
-import com.preservinc.production.djr.model.Employee;
-import com.preservinc.production.djr.model.Report;
+import com.preservinc.production.djr.model.employee.Employee;
+import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.job.JobStatus;
 import com.preservinc.production.djr.model.team.Team;

@@ -1,8 +1,8 @@
 package com.preservinc.production.djr.controller;
 
 import com.preservinc.production.djr.model.job.Job;
-import com.preservinc.production.djr.request.CreateJobSiteRequest;
-import com.preservinc.production.djr.request.StatusChangeRequest;
+import com.preservinc.production.djr.request.job.CreateJobSiteRequest;
+import com.preservinc.production.djr.request.job.StatusChangeRequest;
 import com.preservinc.production.djr.service.job.IJobService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

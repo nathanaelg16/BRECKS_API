@@ -1,6 +1,7 @@
-package com.preservinc.production.djr.model;
+package com.preservinc.production.djr.model.report;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.preservinc.production.djr.model.employee.Employee;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;

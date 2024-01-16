@@ -1,6 +1,6 @@
 package com.preservinc.production.djr.dao.reports;
 
-import com.preservinc.production.djr.model.Report;
+import com.preservinc.production.djr.model.report.Report;
 
 import java.sql.SQLException;
 import java.util.List;

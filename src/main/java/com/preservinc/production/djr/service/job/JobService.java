@@ -4,7 +4,7 @@ import com.preservinc.production.djr.dao.jobs.IJobsDAO;
 import com.preservinc.production.djr.exception.ServerException;
 import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.job.JobStatus;
-import com.preservinc.production.djr.request.CreateJobSiteRequest;
+import com.preservinc.production.djr.request.job.CreateJobSiteRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
