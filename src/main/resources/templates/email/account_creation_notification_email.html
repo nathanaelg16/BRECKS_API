@@ -38,17 +38,14 @@
                         <table class="nested" role="presentation">
                             <tr>
                                 <td style="display: flex;">
-                                    <h3 style="margin: 10px auto;">{{AUTHOR}} has submitted a new job report for <a href="{{WEB_APP_HOST}}/job/{{JOB_ID}}">{{ADDRESS}}</a></h3>
+                                    <h3 style="margin: 10px auto;">You have been added to the platform!</h3>
                                 </td>
                             </tr>
                             <tr>
                                 <td style="display: flex;">
-                                    <a style="margin: 10px auto;" href="{{WEB_APP_HOST}}/job/{{JOB_ID}}/report/{{REPORT_DATE_ID}}">Click here to view</a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td style="display: flex;">
-                                    <p style="margin: 10px auto;">Report Date: {{DATE}}</p>
+                                    <div style="margin: 10px auto; background: var(--redwood); padding: 15px">
+                                        <a style="color: var(--timberwolf)" href="{{WEB_APP_HOST}}/register?q={{BASE64_EMAIL}}">Accept Invitation</a>
+                                    </div>
                                 </td>
                             </tr>
                         </table>

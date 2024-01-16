@@ -122,6 +122,7 @@ public class EmailService implements IEmailService {
         MimeBodyPart body = new MimeBodyPart();
         String emailTemplate = loadTemplate("templates/email/account_creation_notification_email.html", "templates/email/styles.css")
                 .replace("{{WEB_APP_HOST}}", "")
+                .replace("{{BASE64_EMAIL}}", email)
                 .replace("{{LINK}}", Objects.requireNonNull(env.getProperty("webapp.host")));
         body.setContent(emailTemplate, "text/html; charset=utf-8");
 
