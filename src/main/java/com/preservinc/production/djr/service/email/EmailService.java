@@ -115,6 +115,11 @@ public class EmailService implements IEmailService {
         }
     }
 
+    @Override
+    public void sendPasswordResetEmail(@NonNull String email) {
+        // todo implement method
+    }
+
     private String loadTemplate(@NonNull String pathToEmailTemplate, @NonNull String pathToCSSTemplate) throws IOException {
         return new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream(pathToEmailTemplate)).readAllBytes(), StandardCharsets.UTF_8)
                 .replace("{{CSS_RESETS", new String(Objects.requireNonNull(getClass().getClassLoader().getResourceAsStream("templates/email/resets.css")).readAllBytes(), StandardCharsets.UTF_8))

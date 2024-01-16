@@ -1,6 +1,7 @@
 package com.preservinc.production.djr.controller;
 
 import com.google.firebase.auth.FirebaseToken;
+import com.preservinc.production.djr.auth.AuthorizationToken;
 import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.service.report.ReportService;
 import org.apache.logging.log4j.LogManager;
@@ -22,10 +23,10 @@ public class ReportsController {
     }
 
     @PostMapping
-    public ResponseEntity<Object> submitNewJobReport(@RequestAttribute("FirebaseToken") FirebaseToken firebaseToken, @RequestBody Report report) {
-        logger.info("[Reports Controller] Received new job report for job ID {} submitted by {}", report.getJobID(), firebaseToken.getName());
+    public ResponseEntity<Object> submitNewJobReport(@RequestAttribute("AuthorizationToken") AuthorizationToken authorizationToken, @RequestBody Report report) {
+        logger.info("[Reports Controller] Received new job report for job ID {} submitted by {}", report.getJobID(), authorizationToken);
         try {
-            reportService.submitReport(firebaseToken, report);
+            reportService.submitReport(authorizationToken, report);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
