@@ -3,7 +3,7 @@ package com.preservinc.production.djr.controller
 import com.preservinc.production.djr.auth.AuthorizationToken
 import com.preservinc.production.djr.exception.DatabaseException
 import com.preservinc.production.djr.request.auth.UserLoginRequest
-import com.preservinc.production.djr.request.auth.UserRegistration
+import com.preservinc.production.djr.request.auth.UserRegistrationRequest
 import com.preservinc.production.djr.response.ErrorResponse
 import com.preservinc.production.djr.service.authorization.IAuthorizationService
 import org.apache.logging.log4j.LogManager
@@ -31,7 +31,7 @@ class AuthenticationController @Autowired constructor(private val authorizationS
     }
 
     @PostMapping("/register")
-    fun register(@RequestBody registration: UserRegistration) : ResponseEntity<Any> {
+    fun register(@RequestBody registration: UserRegistrationRequest) : ResponseEntity<Any> {
         return try {
             val response = this.authorizationService.registerUser(registration)
             ResponseEntity.status(if (response != null) HttpStatus.OK else HttpStatus.BAD_REQUEST).body(response)

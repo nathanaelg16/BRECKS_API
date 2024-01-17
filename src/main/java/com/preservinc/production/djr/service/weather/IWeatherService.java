@@ -5,6 +5,6 @@ import com.preservinc.production.djr.model.weather.Weather;
 import java.time.LocalDate;
 
 public interface IWeatherService {
-    Weather getTodaysWeather();
+    Weather getCurrentWeather();
     Weather getWeatherOnDate(LocalDate date);
 }

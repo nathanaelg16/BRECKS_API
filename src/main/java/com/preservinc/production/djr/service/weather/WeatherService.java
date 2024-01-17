@@ -12,6 +12,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -34,7 +35,6 @@ public class WeatherService implements IWeatherService {
     private final IEmailService emailService;
     private final Environment env;
     private final HttpClient client;
-    private LocalDateTime lastUpdate;
     private Weather weather;
     private boolean hasExceededRateLimit;
     private LocalDateTime rateLimitExceededTimestamp;
@@ -44,12 +44,9 @@ public class WeatherService implements IWeatherService {
         this.emailService = emailService;
         this.env = env;
         this.client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).followRedirects(HttpClient.Redirect.NORMAL).connectTimeout(Duration.ofSeconds(10)).build();
-        this.fetchWeather();
     }
 
-    public Weather getTodaysWeather() {
-        if (lastUpdate == null) this.fetchWeather();
-        if (lastUpdate.isBefore(LocalDateTime.now().minusHours(1))) this.fetchWeather();
+    public Weather getCurrentWeather() {
         return weather;
     }
 
@@ -120,6 +117,7 @@ public class WeatherService implements IWeatherService {
         return weather;
     }
 
+    @Scheduled(fixedDelay = 3_600_000)
     private void fetchWeather() {
         logger.info("[Weather Service] Fetching weather...");
 
@@ -142,6 +140,7 @@ public class WeatherService implements IWeatherService {
 
         try {
             this.weather = (CurrentWeather) sendRequest(request, responseHandler);
+            logger.info("[Weather Service] Current weather: {}", weather);
         } catch (IOException | InterruptedException e) {
             this.weather = null;
         } catch (WeatherAPIException e) {
@@ -154,8 +153,6 @@ public class WeatherService implements IWeatherService {
                 emailService.notifySysAdmin(e.getCause());
             }
             this.weather = null;
-        } finally {
-            this.lastUpdate = LocalDateTime.now();
         }
     }
 

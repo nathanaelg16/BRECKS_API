@@ -138,7 +138,7 @@ public class ReportService implements IReportService {
 
             if (report.getReportDate().isBefore(LocalDate.now(ZoneId.of("America/New_York"))))
                 weather = weatherService.getWeatherOnDate(report.getReportDate());
-            else weather = weatherService.getTodaysWeather();
+            else weather = weatherService.getCurrentWeather();
 
             if (weather == null)
                 throw new WeatherNotFoundException();

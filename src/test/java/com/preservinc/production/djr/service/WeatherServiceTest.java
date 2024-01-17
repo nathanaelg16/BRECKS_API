@@ -61,7 +61,7 @@ public class WeatherServiceTest {
     @Test
     void testGetTodaysWeather() {
         LocalDateTime requestTimestamp = LocalDateTime.now(ZoneId.of("America/New_York"));
-        Weather weather = weatherService.getTodaysWeather();
+        Weather weather = weatherService.getCurrentWeather();
         logger.info("Today's weather: {}", weather);
         logger.info("Request timestamp: {} - Response timestamp: {}", requestTimestamp, weather.getTimestamp());
         assertTrue(weather.getTimestamp().isAfter(requestTimestamp.minusHours(1)));
