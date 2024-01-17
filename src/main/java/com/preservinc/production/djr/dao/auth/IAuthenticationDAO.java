@@ -1,5 +1,6 @@
 package com.preservinc.production.djr.dao.auth;
 
+import com.preservinc.production.djr.model.auth.SignInMethod;
 import com.preservinc.production.djr.model.auth.User;
 import lombok.NonNull;
 import org.jetbrains.annotations.NotNull;
@@ -9,7 +10,7 @@ import java.sql.SQLException;
 public interface IAuthenticationDAO {
     User findUser(@NonNull String username) throws SQLException;
 
-    void loginAttempt(@NonNull String username, boolean b) throws SQLException;
+    void loginAttempt(@NonNull Integer userID, @NonNull SignInMethod method, boolean success, String reason) throws SQLException;
 
     boolean registerUser(@NonNull String email, @NonNull String username, @NonNull String displayName, @NonNull String password, @NonNull String salt) throws SQLException;
 

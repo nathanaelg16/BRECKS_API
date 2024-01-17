@@ -1,6 +1,7 @@
 package com.preservinc.production.djr.dao.auth;
 
 import com.preservinc.production.djr.exception.DatabaseException;
+import com.preservinc.production.djr.model.auth.SignInMethod;
 import com.preservinc.production.djr.model.auth.User;
 import com.preservinc.production.djr.model.auth.UserStatus;
 import lombok.NonNull;
@@ -12,8 +13,6 @@ import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
 
 @Repository
 public class AuthenticationDAO implements IAuthenticationDAO {
@@ -51,20 +50,16 @@ public class AuthenticationDAO implements IAuthenticationDAO {
     }
 
     @Override
-    public void loginAttempt(@NonNull String username, boolean success) throws SQLException {
-        logger.info("[Auth DAO] Marking a {} login attempt for user: {}",
-                success ? "SUCCESSFUL" : "FAILED", username);
-        List<String> updates = new ArrayList<>();
-        updates.add("last_attempt = CURRENT_TIMESTAMP()");
-        if (success) {
-            updates.add("last_success = CURRENT_TIMESTAMP()");
-            updates.add("failed_attempts = 0");}
-        else updates.add("failed_attempts += 1");
+    public void loginAttempt(@NonNull Integer userID, @NonNull SignInMethod method, boolean success, String reason) throws SQLException {
+        logger.info("[Auth DAO] Marking a {} login attempt for user ID `{}` using method: {}",
+                success ? "SUCCESSFUL" : "FAILED", userID, method);
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p = c.prepareStatement("update Employees set %s where username = ?;"
-                     .formatted(String.join(", ", updates)))
+             PreparedStatement p = c.prepareStatement("insert into SignInEvents (user_id, method, successful, reason) value (?, ?, ?, ?);")
         ) {
-            p.setString(1, username);
+            p.setInt(1, userID);
+            p.setString(2, method.getMethod());
+            p.setBoolean(3, success);
+            p.setString(4, reason);
             p.executeUpdate();
         }
     }
