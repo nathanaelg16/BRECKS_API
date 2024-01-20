@@ -12,7 +12,7 @@ public interface IAuthenticationDAO {
 
     void loginAttempt(@NonNull Integer userID, @NonNull SignInMethod method, boolean success, String reason) throws SQLException;
 
-    boolean registerUser(@NonNull String email, @NonNull String username, @NonNull String displayName, @NonNull String password, @NonNull String salt) throws SQLException;
+    void registerUser(@NonNull String email, @NonNull String username, @NonNull String displayName, @NonNull String password, @NonNull String salt) throws SQLException;
 
     void setPassword(@NonNull String user, @NonNull String hash, @NonNull String salt) throws SQLException;
 

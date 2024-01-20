@@ -1,4 +1,4 @@
-package com.preservinc.production.djr.auth;
+package com.preservinc.production.djr.auth.accesskey;
 
 import lombok.Getter;
 

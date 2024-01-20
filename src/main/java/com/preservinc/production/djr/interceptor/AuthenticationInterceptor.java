@@ -1,7 +1,10 @@
 package com.preservinc.production.djr.interceptor;
 
-import com.preservinc.production.djr.auth.AuthorizationToken;
-import com.preservinc.production.djr.auth.RevokedTokens;
+import com.preservinc.production.djr.auth.accesskey.AccessKey;
+import com.preservinc.production.djr.auth.accesskey.AccessKeyManager;
+import com.preservinc.production.djr.auth.jwt.AuthorizationToken;
+import com.preservinc.production.djr.auth.jwt.RevokedTokens;
+import com.preservinc.production.djr.service.authorization.IAuthorizationService;
 import com.preservinc.production.djr.util.Constants;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.SignatureException;
@@ -15,11 +18,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.servlet.ModelAndView;
 
-import javax.crypto.SecretKey;
+import javax.annotation.Nullable;
 import java.sql.Date;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 @Component
@@ -27,13 +31,16 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
     private static final Logger logger = LogManager.getLogger();
     private final RevokedTokens revokedTokens;
     private final JwtParser jwtParser;
-    private final SecretKey secretKey;
+    private final AccessKeyManager accessKeyManager;
+    private final IAuthorizationService authorizationService;
 
     @Autowired
-    public AuthenticationInterceptor(@Lazy SecretKey secretKey, @Lazy JwtParser jwtParser, RevokedTokens revokedTokens) {
-        this.secretKey = secretKey;
+    public AuthenticationInterceptor(@Lazy JwtParser jwtParser, RevokedTokens revokedTokens,
+                                     AccessKeyManager accessKeyManager, IAuthorizationService authorizationService) {
         this.jwtParser = jwtParser;
         this.revokedTokens = revokedTokens;
+        this.accessKeyManager = accessKeyManager;
+        this.authorizationService = authorizationService;
     }
 
     @Override
@@ -50,31 +57,44 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         }
 
         String[] authorizationTypeAndToken = authorizationHeader.split(" ");
+
         if (authorizationTypeAndToken.length != 2) {
             logger.error("Invalid authorization header: {}", authorizationHeader);
             response.sendError(401, "Invalid authentication token");
             return false;
         }
 
-        String authorizationType = authorizationTypeAndToken[0].strip();
-        String authorizationToken = authorizationTypeAndToken[1].strip();
-        if (authorizationType.equals(AuthorizationType.BEARER.toString())) {
-            AuthorizationToken token = new AuthorizationToken(authorizationToken);
-            if (verifyToken(token)) {
-                request.setAttribute("token", token);
-                return true;
-            } else response.sendError(401, "Invalid authentication token");
-        } else {
-            logger.info("Unsupported authorization type: {}", authorizationType);
+        String authorizationTypeString = authorizationTypeAndToken[0].strip();
+        AuthorizationType authorizationType = AuthorizationType.of(authorizationTypeString);
+
+        if (authorizationType == null) {
+            logger.info("Unsupported authorization type: {}", authorizationTypeString);
             response.sendError(401, "Unsupported authorization type");
+            return false;
+        }
+
+        String authorizationToken = authorizationTypeAndToken[1].strip();
+
+        switch (authorizationType) {
+            case JWT -> {
+                AuthorizationToken token = new AuthorizationToken(authorizationToken);
+                if (verifyToken(token)) {
+                    request.setAttribute("token", token);
+                    return true;
+                } else response.sendError(401, "Invalid authentication token");
+            }
+
+            case ACCESS_KEY -> {
+                AccessKey accessKey = this.accessKeyManager.verifyAccessKey(authorizationToken, request.getRequestURI());
+                if (accessKey == null) response.sendError(401, "Invalid authentication token");
+                else {
+                    request.setAttribute("accessKey", accessKey);
+                    return true;
+                }
+            }
         }
 
         return false;
-    }
-
-    @Override
-    public void postHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler, ModelAndView modelAndView) throws Exception {
-        HandlerInterceptor.super.postHandle(request, response, handler, modelAndView);
     }
 
     @Override
@@ -95,26 +115,28 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         return false;
     }
 
-    private void attemptTokenRenewal(HttpServletRequest request, HttpServletResponse response) throws Exception {
+    private void attemptTokenRenewal(HttpServletRequest request, HttpServletResponse response) {
         logger.info("[Auth Interceptor] Checking if token qualifies for renewal...");
-        Jws<Claims> claims = (Jws<Claims>) Objects.requireNonNull(request.getAttribute("claims"));
-        Claims body = claims.getPayload();
+        AuthorizationToken token = (AuthorizationToken) Objects.requireNonNull(request.getAttribute("token"));
+        Jws<Claims> jwsToken = this.jwtParser.parseSignedClaims(token.token());
+        Claims body = jwsToken.getPayload();
         if (body.getExpiration().before(Date.from(Instant.now().plusMillis(Constants.DEFAULT_TOKEN_REFRESH_DELTA)))) {
             logger.info("[Auth Interceptor] Token qualifies for renewal! Renewing token...");
-            String renewedToken = Jwts.builder()
-                    .subject(body.getSubject())
-                    .issuer("BRECKS Authentication Service")
-                    .issuedAt(Date.from(Instant.now()))
-                    .expiration(Date.from(Instant.now().plusMillis(Constants.DEFAULT_TIMEOUT)))
-                    .signWith(this.secretKey)
-                    .compact();
-            response.setHeader("X-Token-Renewal", renewedToken);
+            AuthorizationToken renewedToken = this.authorizationService.reissueAuthorizationToken(token);
+            response.setHeader("X-Token-Renewal", renewedToken.token());
         } else logger.info("[Auth Interceptor] Token does not qualify for renewal.");
     }
 
     @Getter
     private enum AuthorizationType {
-        BEARER ("Bearer");
+        JWT ("BearerJWT"),
+        ACCESS_KEY ("BearerAccessKey");
+
+        private static final Map<String, AuthorizationType> map = new HashMap<>(values().length, 1);
+
+        static {
+            for (AuthorizationType authorizationType : values()) map.put(authorizationType.name(), authorizationType);
+        }
 
         private final String name;
 
@@ -125,6 +147,11 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         @Override
         public String toString() {
             return this.getName();
+        }
+
+        @Nullable
+        public static AuthorizationType of(String type) {
+            return map.get(type);
         }
     }
 }

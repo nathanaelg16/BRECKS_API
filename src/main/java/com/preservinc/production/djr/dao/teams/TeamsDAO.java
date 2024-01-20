@@ -1,6 +1,7 @@
 package com.preservinc.production.djr.dao.teams;
 
 import com.preservinc.production.djr.model.employee.Employee;
+import com.preservinc.production.djr.model.employee.EmployeeStatus;
 import com.preservinc.production.djr.model.team.Team;
 import com.preservinc.production.djr.model.team.TeamMemberRole;
 import org.apache.logging.log4j.LogManager;
@@ -36,7 +37,7 @@ public class TeamsDAO implements ITeamsDAO {
              PreparedStatement p1 = c.prepareStatement("WITH team_pm AS (SELECT T.pm FROM Teams T WHERE T.id = ?) " +
                      "SELECT E.id, E.first_name, E.last_name, E.display_name, " +
                             "E.role AS employee_role, E.email, E.admin, TM.role AS team_member_role, " +
-                            "(SELECT IF(E.id = pm, 1, 0) FROM team_pm) AS is_pm " +
+                            "(SELECT IF(E.id = pm, 1, 0) FROM team_pm) AS is_pm, E.status " +
                      "FROM TeamMembers TM " +
                      "INNER JOIN Employees E ON E.id = TM.member_id " +
                      "WHERE TM.team_id = ?;")
@@ -51,7 +52,8 @@ public class TeamsDAO implements ITeamsDAO {
                             r1.getString("display_name"),
                             r1.getString("employee_role"),
                             r1.getString("email"),
-                            r1.getBoolean("admin")
+                            r1.getBoolean("admin"),
+                            EmployeeStatus.valueOf(r1.getString("status"))
                     );
                     TeamMemberRole role = TeamMemberRole.of(r1.getString("team_member_role"));
                     if (r1.getBoolean("is_pm")) team = new Team(teamID, employee);

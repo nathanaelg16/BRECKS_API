@@ -1,9 +1,10 @@
 package com.preservinc.production.djr.service.authorization
 
-import com.preservinc.production.djr.auth.AuthorizationToken
+import com.preservinc.production.djr.auth.jwt.AuthorizationToken
 import com.preservinc.production.djr.model.auth.User
 import com.preservinc.production.djr.request.auth.UserLoginRequest
 import com.preservinc.production.djr.request.auth.UserRegistrationRequest
+import com.preservinc.production.djr.response.RegistrationDetailsResponse
 
 interface IAuthorizationService {
     fun authenticateUser(userLoginRequest: UserLoginRequest): AuthorizationToken?
@@ -20,4 +21,6 @@ interface IAuthorizationService {
     fun saltPassword(password: String, salt: String): String
     fun pepperPassword(password: String): String
     fun resetPassword(userIdentification: String, identificationType: String)
+    fun getPreloadedRegistrationDetails(email: String): RegistrationDetailsResponse
+    fun reissueAuthorizationToken(authToken: AuthorizationToken) : AuthorizationToken
 }

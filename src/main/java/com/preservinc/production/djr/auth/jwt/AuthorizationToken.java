@@ -1,4 +1,4 @@
-package com.preservinc.production.djr.auth;
+package com.preservinc.production.djr.auth.jwt;
 
 
 import org.apache.commons.lang3.builder.EqualsBuilder;

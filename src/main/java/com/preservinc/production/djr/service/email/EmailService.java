@@ -1,6 +1,9 @@
 package com.preservinc.production.djr.service.email;
 
+import com.preservinc.production.djr.auth.accesskey.AccessKeyManager;
+import com.preservinc.production.djr.auth.accesskey.KeyDuration;
 import com.preservinc.production.djr.dao.reports.IReportsDAO;
+import com.preservinc.production.djr.exception.auth.AccessKeyException;
 import com.preservinc.production.djr.model.employee.Employee;
 import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.model.job.Job;
@@ -30,12 +33,14 @@ public class EmailService implements IEmailService {
     private final Session session;
     private final IReportsDAO reportsDAO;
     private final Environment env;
+    private final AccessKeyManager accessKeyManager;
 
     @Autowired
-    public EmailService(Environment env, Session session, IReportsDAO reportsDAO) {
+    public EmailService(Environment env, Session session, IReportsDAO reportsDAO, AccessKeyManager accessKeyManager) {
         this.env = env;
         this.session = session;
         this.reportsDAO = reportsDAO;
+        this.accessKeyManager = accessKeyManager;
     }
 
     public void sendReportEmail(Employee author, Job job, LocalDate reportDate, File report) throws SQLException, IOException, MessagingException {
@@ -119,10 +124,18 @@ public class EmailService implements IEmailService {
     public void notifyAccountCreation(@NonNull String email) throws MessagingException, IOException {
         logger.info("[Email Service] Notifying user with email `{}` that they have been added to the platform...", email);
 
+        String accessKey = "";
+
+        try {
+            accessKey = this.accessKeyManager.createAccessKey(email, KeyDuration.LONG);
+        } catch (AccessKeyException e) {
+            this.notifySysAdmin(e);
+        }
+
         MimeBodyPart body = new MimeBodyPart();
         String emailTemplate = loadTemplate("templates/email/account_creation_notification_email.html", "templates/email/styles.css")
                 .replace("{{WEB_APP_HOST}}", "")
-                .replace("{{BASE64_EMAIL}}", email)
+                .replace("{{ACCESS_KEY}}", accessKey)
                 .replace("{{LINK}}", Objects.requireNonNull(env.getProperty("webapp.host")));
         body.setContent(emailTemplate, "text/html; charset=utf-8");
 

@@ -1,7 +1,6 @@
 package com.preservinc.production.djr.controller;
 
-import com.google.firebase.auth.FirebaseToken;
-import com.preservinc.production.djr.auth.AuthorizationToken;
+import com.preservinc.production.djr.auth.jwt.AuthorizationToken;
 import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.service.report.ReportService;
 import org.apache.logging.log4j.LogManager;

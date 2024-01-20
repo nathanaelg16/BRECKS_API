@@ -3,7 +3,7 @@ package com.preservinc.production.djr.service.report;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.preservinc.production.djr.auth.AuthorizationToken;
+import com.preservinc.production.djr.auth.jwt.AuthorizationToken;
 import com.preservinc.production.djr.dao.employees.IEmployeeDAO;
 import com.preservinc.production.djr.dao.jobs.IJobsDAO;
 import com.preservinc.production.djr.dao.reports.IReportsDAO;

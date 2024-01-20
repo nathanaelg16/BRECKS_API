@@ -168,7 +168,7 @@ public class JobsDAO implements IJobsDAO {
                             JobStatus.of(r.getString("status")),
                             new Team(r.getInt("team_id"),
                                     new Employee(r.getInt("pm"), null, null, null,
-                                            null, null, null)
+                                            null, null, null, null)
                             )
                     ));
                 }

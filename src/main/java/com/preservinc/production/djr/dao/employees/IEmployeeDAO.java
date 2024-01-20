@@ -10,5 +10,7 @@ public interface IEmployeeDAO {
 
     Employee findEmployeeByUsername(String username) throws SQLException;
 
+    Employee findEmployeeByEmail(String email) throws SQLException;
+
     void createEmployee(AddEmployeeRequest request) throws SQLException;
 }
