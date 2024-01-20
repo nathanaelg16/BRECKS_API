@@ -9,7 +9,7 @@ import java.time.temporal.ChronoUnit;
 public enum KeyDuration {
     SHORT(Duration.of(10, ChronoUnit.MINUTES)),
     LONG(Duration.of(24, ChronoUnit.HOURS)),
-    INFINITE(Duration.of(Long.MAX_VALUE, ChronoUnit.FOREVER));
+    EXTRA_LONG(Duration.of(30, ChronoUnit.DAYS));
 
     private final Duration duration;
 

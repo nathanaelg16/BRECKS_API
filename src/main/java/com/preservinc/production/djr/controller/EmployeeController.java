@@ -2,11 +2,11 @@ package com.preservinc.production.djr.controller;
 
 import com.preservinc.production.djr.request.employee.AddEmployeeRequest;
 import com.preservinc.production.djr.service.employee.IEmployeeService;
-import lombok.AllArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +22,7 @@ public class EmployeeController {
         this.employeeService = employeeService;
     }
 
+    @PostMapping("/add")
     public ResponseEntity<Object> addEmployee(@RequestBody AddEmployeeRequest request) {
         logger.info("[Employee Controller] Received request to add new employee: {}", request);
         if (!request.isWellFormed()) return ResponseEntity.badRequest().body("All fields are required.");
@@ -29,3 +30,5 @@ public class EmployeeController {
         return ResponseEntity.ok().build();
     }
 }
+
+// todo implement activate / deactivate employee endpoints

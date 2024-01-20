@@ -45,7 +45,7 @@ public class AccessKeyManager {
     public AccessKey verifyAccessKey(@NonNull String accessKey, @NonNull String endpoint) {
         logger.info("[Access Key Manager] Verifying access key `{}`", accessKey);
 
-        AccessKey key = this.accessKeys.remove(accessKey);
+        AccessKey key = this.accessKeys.get(accessKey);
 
         if (key == null) {
             logger.info("[Access Key Manager] Access key not found. May be malformed or expired.");
@@ -60,9 +60,16 @@ public class AccessKeyManager {
 
             boolean isValidKey = key.isValid();
             boolean isWithinScope = key.withinScope(endpoint);
-            boolean isValid = isValidKey && isWithinScope;
+            boolean verified = isValidKey && isWithinScope;
 
-            if (isValid) {
+            /*
+            * If the key is valid AND the endpoint is within scope, deactivate the access key.
+            * If the key is valid AND the endpoint is NOT within scope, leave the active to be reused.
+            * If the key is not valid, remove the key from the access list.
+            * */
+            if (verified || !isValidKey) this.accessKeys.remove(accessKey);
+
+            if (verified) {
                 this.authenticationDAO.loginAttempt(user.id(), SignInMethod.ACCESS_KEY, true, null);
                 return key;
             } else {

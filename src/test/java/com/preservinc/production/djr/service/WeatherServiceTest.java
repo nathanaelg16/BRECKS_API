@@ -1,12 +1,13 @@
 package com.preservinc.production.djr.service;
 
 import com.preservinc.production.djr.model.employee.Employee;
-import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.model.job.Job;
+import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.model.weather.Weather;
 import com.preservinc.production.djr.service.email.IEmailService;
 import com.preservinc.production.djr.service.weather.WeatherService;
 import jakarta.mail.MessagingException;
+import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +51,16 @@ public class WeatherServiceTest {
         public void notifySysAdmin(Throwable ex) {
             logger.info("[TEST] [EmailServiceMock] Notifying SysAdmin of error");
             logger.error(ex);
+        }
+
+        @Override
+        public void sendPasswordResetEmail(@NonNull String email) {
+            logger.info("[TEST] [EmailServiceMock] send password reset");
+        }
+
+        @Override
+        public void notifyAccountCreation(String email) throws MessagingException, IOException {
+            logger.info("[TEST] [EmailServiceMock] Notifying account creation");
         }
     }
 

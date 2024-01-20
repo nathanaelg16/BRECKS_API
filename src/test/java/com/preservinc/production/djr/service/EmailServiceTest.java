@@ -1,10 +1,12 @@
 package com.preservinc.production.djr.service;
 
+import com.preservinc.production.djr.auth.accesskey.AccessKeyManager;
 import com.preservinc.production.djr.dao.reports.IReportsDAO;
 import com.preservinc.production.djr.model.employee.Employee;
-import com.preservinc.production.djr.model.report.Report;
+import com.preservinc.production.djr.model.employee.EmployeeStatus;
 import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.job.JobStatus;
+import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.model.team.Team;
 import com.preservinc.production.djr.service.email.EmailService;
 import jakarta.mail.Session;
@@ -41,6 +43,9 @@ public class EmailServiceTest {
     @Autowired
     private Session session;
 
+    @Autowired
+    private AccessKeyManager accessKeyManager;
+
     static class ReportsDAOMock implements IReportsDAO {
 
         @Override
@@ -59,7 +64,7 @@ public class EmailServiceTest {
     @BeforeEach
     void setUp() {
         session.setDebug(true);
-        this.emailService = new EmailService(env, session, new ReportsDAOMock());
+        this.emailService = new EmailService(env, session, new ReportsDAOMock(), accessKeyManager);
     }
 
     @Test
@@ -70,7 +75,7 @@ public class EmailServiceTest {
 
     @Test
     void testNotifyReportSubmission() {
-        Employee employee = new Employee(1, "1", "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false);
+        Employee employee = new Employee(1, "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false, EmployeeStatus.ACTIVE);
         Team team = new Team(1, employee);
 
         Report report = new Report();
@@ -82,7 +87,7 @@ public class EmailServiceTest {
 
     @Test
     void testSendReportSubmission() throws URISyntaxException {
-        Employee employee = new Employee(1, "1", "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false);
+        Employee employee = new Employee(1, "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false, EmployeeStatus.ACTIVE);
 
         Team team = new Team(1, employee);
 

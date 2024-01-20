@@ -79,7 +79,6 @@ public final class AccessKey {
         return this.expiryTime.isAfter(LocalDateTime.now(ZoneId.of("America/New_York")));
     }
 
-    // todo test this
     boolean withinScope(String endpoint) {
         return this.scope.stream().anyMatch((scope) -> {
             if (scope.contains("*")) {
