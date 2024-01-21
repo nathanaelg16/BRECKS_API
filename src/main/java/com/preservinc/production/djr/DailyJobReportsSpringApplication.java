@@ -11,3 +11,5 @@ public class DailyJobReportsSpringApplication {
     }
 
 }
+
+// todo post initialization, create root user with default password if not exists

@@ -135,18 +135,18 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         private static final Map<String, AuthorizationType> map = new HashMap<>(values().length, 1);
 
         static {
-            for (AuthorizationType authorizationType : values()) map.put(authorizationType.name(), authorizationType);
+            for (AuthorizationType authorizationType : values()) map.put(authorizationType.getType(), authorizationType);
         }
 
-        private final String name;
+        private final String type;
 
-        AuthorizationType(String name) {
-            this.name = name;
+        AuthorizationType(String type) {
+            this.type = type;
         }
 
         @Override
         public String toString() {
-            return this.getName();
+            return this.getType();
         }
 
         @Nullable

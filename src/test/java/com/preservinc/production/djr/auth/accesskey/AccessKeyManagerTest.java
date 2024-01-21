@@ -27,8 +27,7 @@ public class AccessKeyManagerTest {
 
     @BeforeEach
     void setUp() {
-        this.authenticationDAO = new MockAuthenticationDAO();
-        this.accessKeyManager = new AccessKeyManager(authenticationDAO);
+        this.accessKeyManager = new AccessKeyManager();
     }
 
     @Test

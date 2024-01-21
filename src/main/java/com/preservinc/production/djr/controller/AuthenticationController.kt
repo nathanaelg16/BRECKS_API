@@ -1,7 +1,6 @@
 package com.preservinc.production.djr.controller
 
 import com.preservinc.production.djr.auth.accesskey.AccessKey
-import com.preservinc.production.djr.auth.accesskey.AccessKeyManager
 import com.preservinc.production.djr.auth.jwt.AuthorizationToken
 import com.preservinc.production.djr.exception.DatabaseException
 import com.preservinc.production.djr.request.auth.UserLoginRequest
@@ -18,8 +17,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-class AuthenticationController @Autowired constructor(private val authorizationService: IAuthorizationService, private val accessKeyManager: AccessKeyManager) {
-
+class AuthenticationController @Autowired constructor(private val authorizationService: IAuthorizationService) {
     @PostMapping("/login")
     fun  login(@RequestBody userLogin: UserLoginRequest) : ResponseEntity<AuthorizationToken> {
         logger.info("[Auth Controller] Login request received for user: {}", userLogin.username)
@@ -45,20 +43,16 @@ class AuthenticationController @Autowired constructor(private val authorizationS
     }
 
     @PostMapping("/registration/checkUnique")
-    fun checkUnique(@RequestBody username : String, @RequestAttribute accessKey: AccessKey) : ResponseEntity<Any> {
+    fun checkUnique(@RequestBody username : String) : ResponseEntity<Any> {
         logger.info("[Auth Controller] Checking if username `{}` is unique", username)
         data class Response(val unique: Boolean)
-        return ResponseEntity.ok()
-            .header("X-Access-Key-Renewal", accessKeyManager.renewAccessKey(accessKey))
-            .body(Response(authorizationService.checkUnique(username)))
+        return ResponseEntity.ok().body(Response(authorizationService.checkUnique(username)))
     }
 
     @GetMapping("/registration/details")
     fun preloadedRegistrationDetails(@RequestAttribute accessKey: AccessKey) : ResponseEntity<RegistrationDetailsResponse> {
         logger.info("[Auth Controller] Fetching preloaded registration details for user identified by: {}", accessKey.email())
-        return ResponseEntity.ok()
-            .header("X-Access-Key-Renewal", accessKeyManager.renewAccessKey(accessKey))
-            .body(authorizationService.getPreloadedRegistrationDetails(accessKey.email()))
+        return ResponseEntity.ok().body(authorizationService.getPreloadedRegistrationDetails(accessKey.email()))
     }
 
     @PostMapping("/logout")

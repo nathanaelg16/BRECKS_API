@@ -1,10 +1,7 @@
 package com.preservinc.production.djr.request.employee;
 
 import com.preservinc.production.djr.request.Request;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -19,6 +16,13 @@ public class AddEmployeeRequest implements Request {
     private String lastName;
     private String role;
     private String email;
+
+    @Getter(AccessLevel.NONE)
+    private Boolean admin = null;
+
+    public Boolean isAdmin() {
+        return this.admin;
+    }
 
     @Override
     public boolean isWellFormed() {

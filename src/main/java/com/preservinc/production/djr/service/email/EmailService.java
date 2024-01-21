@@ -5,15 +5,19 @@ import com.preservinc.production.djr.auth.accesskey.KeyDuration;
 import com.preservinc.production.djr.dao.reports.IReportsDAO;
 import com.preservinc.production.djr.exception.auth.AccessKeyException;
 import com.preservinc.production.djr.model.employee.Employee;
-import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.model.job.Job;
+import com.preservinc.production.djr.model.report.Report;
 import jakarta.mail.*;
-import jakarta.mail.internet.*;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 import lombok.NonNull;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -34,6 +38,9 @@ public class EmailService implements IEmailService {
     private final IReportsDAO reportsDAO;
     private final Environment env;
     private final AccessKeyManager accessKeyManager;
+
+    @Value("${spring.profiles.active}")
+    private String ACTIVE_PROFILE; // todo remove this in production
 
     @Autowired
     public EmailService(Environment env, Session session, IReportsDAO reportsDAO, AccessKeyManager accessKeyManager) {
@@ -127,16 +134,22 @@ public class EmailService implements IEmailService {
         String accessKey = "";
 
         try {
-            accessKey = this.accessKeyManager.createAccessKey(email, KeyDuration.LONG);
+            accessKey = this.accessKeyManager.createAccessKey(email, KeyDuration.LONG, "/registration",
+                    "/registration/*", "/register");
         } catch (AccessKeyException e) {
             this.notifySysAdmin(e);
         }
 
+        // todo remove this in production
+        if ("local".equals(ACTIVE_PROFILE)) {
+            logger.info("[Email Service] Access Key: {}", accessKey);
+            return;
+        }
+
         MimeBodyPart body = new MimeBodyPart();
         String emailTemplate = loadTemplate("templates/email/account_creation_notification_email.html", "templates/email/styles.css")
-                .replace("{{WEB_APP_HOST}}", "")
-                .replace("{{ACCESS_KEY}}", accessKey)
-                .replace("{{LINK}}", Objects.requireNonNull(env.getProperty("webapp.host")));
+                .replace("{{WEB_APP_HOST}}", Objects.requireNonNull(env.getProperty("webapp.host")))
+                .replace("{{ACCESS_KEY}}", accessKey);
         body.setContent(emailTemplate, "text/html; charset=utf-8");
 
         Envelope.Builder(this.session)

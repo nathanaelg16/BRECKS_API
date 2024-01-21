@@ -1,31 +1,24 @@
 package com.preservinc.production.djr.auth.accesskey;
 
-import com.preservinc.production.djr.dao.auth.IAuthenticationDAO;
-import com.preservinc.production.djr.exception.DatabaseException;
 import com.preservinc.production.djr.exception.auth.AccessKeyException;
-import com.preservinc.production.djr.model.auth.SignInMethod;
-import com.preservinc.production.djr.model.auth.User;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.sql.SQLException;
 import java.util.*;
 
 @Component
 public class AccessKeyManager {
     private static final Logger logger = LogManager.getLogger();
-    private final IAuthenticationDAO authenticationDAO;
     private final Map<String, AccessKey> accessKeys;
 
-    @Autowired
-    public AccessKeyManager(IAuthenticationDAO authenticationDAO) {
-        this.authenticationDAO = authenticationDAO;
+    public AccessKeyManager() {
         this.accessKeys = new HashMap<>();
     }
+
+    // todo define enum of allowed scopes
 
     public String createAccessKey(@NonNull String email, @NonNull KeyDuration duration, @NonNull String... scopes) throws AccessKeyException {
         return createAccessKey(email, duration, Set.of(scopes));
@@ -54,35 +47,10 @@ public class AccessKeyManager {
 
         logger.info("[Access Key Manager] Access key belongs to: {}", key.email());
         logger.info("[Access Key Manager] Expires: {}", key.expiryTime());
+        logger.info("[Access Key Manager] Scope: {}", key.scope());
 
-        try {
-            User user = this.authenticationDAO.findUserByEmail(key.email());
-
-            boolean isValidKey = key.isValid();
-            boolean isWithinScope = key.withinScope(endpoint);
-            boolean verified = isValidKey && isWithinScope;
-
-            /*
-            * If the key is valid AND the endpoint is within scope, deactivate the access key.
-            * If the key is valid AND the endpoint is NOT within scope, leave the active to be reused.
-            * If the key is not valid, remove the key from the access list.
-            * */
-            if (verified || !isValidKey) this.accessKeys.remove(accessKey);
-
-            if (verified) {
-                this.authenticationDAO.loginAttempt(user.id(), SignInMethod.ACCESS_KEY, true, null);
-                return key;
-            } else {
-                this.authenticationDAO.loginAttempt(user.id(), SignInMethod.ACCESS_KEY, false,
-                        !isValidKey ? "Access key expired at %s".formatted(key.expiryTime().toString()) :
-                                "Endpoint '%s' is not within scope".formatted(endpoint));
-                return null;
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage());
-            logger.error(e);
-            throw new DatabaseException();
-        }
+        if (key.isValid() && key.withinScope(endpoint)) return key;
+        else return null;
     }
 
     @Scheduled(fixedDelay = 1_200_000)

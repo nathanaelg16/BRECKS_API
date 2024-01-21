@@ -105,13 +105,14 @@ public class EmployeeDAO implements IEmployeeDAO {
         logger.info("[Employee DAO] Creating employee on database with email: {}", request.getEmail());
         try (Connection c = this.dataSource.getConnection();
              PreparedStatement p = c.prepareStatement("insert into Employees (first_name, last_name, " +
-                     "display_name, role, email) value (?, ?, ?, ?, ?);")
+                     "display_name, role, email, admin) value (?, ?, ?, ?, ?, ?);")
         ) {
             p.setString(1, request.getFirstName());
             p.setString(2, request.getLastName());
             p.setString(3, request.getFirstName());
             p.setString(4, request.getRole());
             p.setString(5, request.getEmail());
+            p.setBoolean(6, request.isAdmin() != null && request.isAdmin());
             p.executeUpdate();
         } catch (SQLIntegrityConstraintViolationException e) {
             logger.info("[Employee DAO] Integrity constraint violation occurred: {}", e.getMessage());

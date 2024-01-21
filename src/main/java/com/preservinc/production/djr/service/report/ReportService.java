@@ -9,9 +9,9 @@ import com.preservinc.production.djr.dao.jobs.IJobsDAO;
 import com.preservinc.production.djr.dao.reports.IReportsDAO;
 import com.preservinc.production.djr.exception.ServerException;
 import com.preservinc.production.djr.exception.report.*;
-import com.preservinc.production.djr.model.report.Report;
-import com.preservinc.production.djr.model.job.Job;
 import com.preservinc.production.djr.model.employee.Employee;
+import com.preservinc.production.djr.model.job.Job;
+import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.model.team.TeamMemberRole;
 import com.preservinc.production.djr.model.weather.Weather;
 import com.preservinc.production.djr.service.email.IEmailService;
@@ -157,7 +157,7 @@ public class ReportService implements IReportService {
 
         logger.info("[Report Service] Retrieving PDF template...");
         S3Object reportPDFTemplateObject = spaces.getObject(env.getProperty("spaces.name"),
-                "%s/DJR%s.pdf".formatted(env.getProperty("spaces.folder"), report.isOnsite() ? "" : "-R"));
+                "templates/DJR%s.pdf".formatted(report.isOnsite() ? "" : "-R"));
         S3ObjectInputStream reportPDFTemplateObjectInputStream = reportPDFTemplateObject.getObjectContent();
         Files.copy(reportPDFTemplateObjectInputStream, tempFilePath, StandardCopyOption.REPLACE_EXISTING);
 

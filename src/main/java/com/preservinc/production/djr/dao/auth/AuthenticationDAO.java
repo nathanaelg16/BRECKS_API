@@ -131,21 +131,24 @@ public class AuthenticationDAO implements IAuthenticationDAO {
         try (Connection c = this.dataSource.getConnection();
              PreparedStatement p = c.prepareStatement("select E.id, E.first_name, E.last_name, E.display_name, E.email, " +
                      "EUA.username, EUA.password, EUA.salt, EUA.status from Employees E " +
-                     "inner join EmployeeUserAccounts EUA on E.id = EUA.id where E.email = ?;")
+                     "left join EmployeeUserAccounts EUA on E.id = EUA.id where E.email = ?;")
         ) {
             p.setString(1, email);
             try (ResultSet r = p.executeQuery()) {
-                if (r.next()) return new User(
-                        r.getInt("id"),
-                        r.getString("first_name"),
-                        r.getString("last_name"),
-                        r.getString("display_name"),
-                        r.getString("email"),
-                        r.getString("username"),
-                        r.getString("password"),
-                        r.getString("salt"),
-                        UserStatus.valueOf(r.getString("status"))
-                );
+                if (r.next()) {
+                    String status = r.getString("status");
+                    return new User(
+                            r.getInt("id"),
+                            r.getString("first_name"),
+                            r.getString("last_name"),
+                            r.getString("display_name"),
+                            r.getString("email"),
+                            r.getString("username"),
+                            r.getString("password"),
+                            r.getString("salt"),
+                            status == null ? UserStatus.PENDING : UserStatus.valueOf(status)
+                    );
+                }
                 else return null;
             }
         }
@@ -155,8 +158,8 @@ public class AuthenticationDAO implements IAuthenticationDAO {
     public boolean checkForUserRegistration(@NotNull String email) throws SQLException {
         logger.info("[Auth DAO] Checking if user is registered: {}", email);
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p = c.prepareStatement("select count(*) from EmployeeUserAccounts EUA " +
-                     "inner join Employees E on EUA.id = E.id where E.email = ? and EUA.registration_ts IS NOT NULL;")
+             PreparedStatement p = c.prepareStatement("select count(*) from EmployeeUserAccounts " +
+                     "where email = ?;")
         ) {
             p.setString(1, email);
             try (ResultSet r = p.executeQuery()) {
