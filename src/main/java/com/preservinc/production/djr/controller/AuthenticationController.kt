@@ -32,9 +32,9 @@ class AuthenticationController @Autowired constructor(private val authorizationS
     }
 
     @PostMapping("/register")
-    fun register(@RequestBody registration: UserRegistrationRequest) : ResponseEntity<Any> {
+    fun register(@RequestBody registration: UserRegistrationRequest, @RequestAttribute accessKey: AccessKey) : ResponseEntity<Any> {
         return try {
-            val token = this.authorizationService.registerUser(registration)
+            val token = this.authorizationService.registerUser(registration, accessKey.email())
             ResponseEntity.status(if (token != null) HttpStatus.OK else HttpStatus.BAD_REQUEST).body(token)
         } catch (e: DatabaseException) {
             logger.error(e)

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -105,7 +106,7 @@ public class AccessKeyManagerTest {
         public User findUser(@NonNull String username) throws SQLException {
             logger.info("[Mock Auth Dao] Finding user");
             return new User(1, "Robert", "Marley", "Bob",
-                    "bmarley@aol.com", "bmarley", "adsfghjk", "sdfg", UserStatus.ACTIVE);
+                    "bmarley@aol.com", "bmarley", "adsfghjk".getBytes(StandardCharsets.UTF_8), "sdfg", UserStatus.ACTIVE);
         }
 
         @Override
@@ -115,12 +116,12 @@ public class AccessKeyManagerTest {
         }
 
         @Override
-        public void registerUser(@NonNull String email, @NonNull String username, @NonNull String displayName, @NonNull String password, @NonNull String salt) throws SQLException {
+        public void registerUser(@NonNull String email, @NonNull String username, @NonNull String displayName, byte[] password, @NonNull String salt) throws SQLException {
             logger.info("[Mock auth dao] user registered registered");
         }
 
         @Override
-        public void setPassword(@NonNull String user, @NonNull String hash, @NonNull String salt) throws SQLException {
+        public void setPassword(@NonNull String user, byte[] password, @NonNull String salt) throws SQLException {
             logger.info("[Mock auth dao] password registered");
         }
 
@@ -133,7 +134,7 @@ public class AccessKeyManagerTest {
         public User findUserByEmail(@NonNull String email) throws SQLException {
             logger.info("[Mock Auth Dao] Finding user w/ email");
             return new User(1, "Robert", "Marley", "Bob",
-                    "bmarley@aol.com", "bmarley", "adsfghjk", "sdfg", UserStatus.ACTIVE);
+                    "bmarley@aol.com", "bmarley", "adsfghjk".getBytes(StandardCharsets.UTF_8), "sdfg", UserStatus.ACTIVE);
         }
 
         @Override

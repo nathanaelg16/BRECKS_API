@@ -7,11 +7,6 @@ import java.util.*
 class UserRegistrationRequest : Request {
     var displayName: String? = null
 
-    var email: String? = null
-        set(value) {
-            field = value?.lowercase(Locale.getDefault())
-        }
-
     var username: String? = null
         set(value) {
             field = value?.lowercase(Locale.getDefault())
@@ -23,7 +18,6 @@ class UserRegistrationRequest : Request {
 
     constructor(displayName: String, email: String, username: String, password: String) {
         this.displayName = displayName
-        this.email = email
         this.username = username
         this.password = password
     }
@@ -34,7 +28,6 @@ class UserRegistrationRequest : Request {
             !this.username.isNullOrBlank(),
             StringUtils.isAlphanumeric(username),
             !this.password.isNullOrBlank(),
-            !this.email.isNullOrBlank()
         ).all { it }
     }
 }

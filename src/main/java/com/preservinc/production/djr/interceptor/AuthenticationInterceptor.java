@@ -22,17 +22,22 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import javax.annotation.Nullable;
 import java.sql.Date;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 @Component
 public class AuthenticationInterceptor implements HandlerInterceptor {
     private static final Logger logger = LogManager.getLogger();
+    private static final Set<String> OPEN_ENDPOINTS;
     private final RevokedTokens revokedTokens;
     private final JwtParser jwtParser;
     private final AccessKeyManager accessKeyManager;
     private final IAuthorizationService authorizationService;
+
+    static {
+        OPEN_ENDPOINTS = new HashSet<>();
+        OPEN_ENDPOINTS.add("/error");
+        OPEN_ENDPOINTS.add("/login");
+    }
 
     @Autowired
     public AuthenticationInterceptor(@Lazy JwtParser jwtParser, RevokedTokens revokedTokens,
@@ -48,6 +53,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         logger.info("[Auth Interceptor -- Pre-Handle] Checking request authentication at endpoint {}", request.getRequestURI());
 
         if (request.getMethod().equalsIgnoreCase("options")) return true;
+        if (OPEN_ENDPOINTS.contains(request.getRequestURI())) return true;
 
         String authorizationHeader = request.getHeader("Authorization");
         if (authorizationHeader == null || authorizationHeader.isBlank()) {

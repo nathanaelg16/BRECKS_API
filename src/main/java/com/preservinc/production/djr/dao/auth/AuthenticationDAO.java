@@ -41,7 +41,7 @@ public class AuthenticationDAO implements IAuthenticationDAO {
                         r.getString("display_name"),
                         r.getString("email"),
                         r.getString("username"),
-                        r.getString("password"),
+                        r.getBytes("password"),
                         r.getString("salt"),
                         UserStatus.valueOf(r.getString("status"))
                     );
@@ -68,7 +68,7 @@ public class AuthenticationDAO implements IAuthenticationDAO {
 
     @Override
     public void registerUser(@NonNull String email, @NonNull String username, @NonNull String displayName,
-                                @NonNull String password, @NonNull String salt) throws SQLException {
+                                byte[] password, @NonNull String salt) throws SQLException {
         logger.info("[Auth DAO] Attempting to register user with email: {}", email);
         try (Connection c = this.dataSource.getConnection();
              PreparedStatement p1 = c.prepareStatement("insert into EmployeeUserAccounts " +
@@ -76,7 +76,7 @@ public class AuthenticationDAO implements IAuthenticationDAO {
                      "from (select id from Employees where email = ?) as EmployeeID;")
         ) {
             p1.setString(1, username);
-            p1.setString(2, password);
+            p1.setBytes(2, password);
             p1.setString(3, salt);
             p1.setString(4, UserStatus.ACTIVE.name());
             p1.setString(5, email);
@@ -100,12 +100,12 @@ public class AuthenticationDAO implements IAuthenticationDAO {
     }
 
     @Override
-    public void setPassword(@NonNull String user, @NonNull String hash, @NonNull String salt) throws SQLException {
+    public void setPassword(@NonNull String user, byte[] password, @NonNull String salt) throws SQLException {
         logger.info("[Auth DAO] Setting password for user: {}", user);
         try (Connection c = this.dataSource.getConnection();
              PreparedStatement p = c.prepareStatement("update EmployeeUserAccounts set password = ?, salt = ? where username = ?;")
         ) {
-            p.setString(1, hash);
+            p.setBytes(1, password);
             p.setString(2, salt);
             p.setString(3, user);
             p.executeUpdate();
@@ -144,7 +144,7 @@ public class AuthenticationDAO implements IAuthenticationDAO {
                             r.getString("display_name"),
                             r.getString("email"),
                             r.getString("username"),
-                            r.getString("password"),
+                            r.getBytes("password"),
                             r.getString("salt"),
                             status == null ? UserStatus.PENDING : UserStatus.valueOf(status)
                     );
@@ -158,8 +158,8 @@ public class AuthenticationDAO implements IAuthenticationDAO {
     public boolean checkForUserRegistration(@NotNull String email) throws SQLException {
         logger.info("[Auth DAO] Checking if user is registered: {}", email);
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p = c.prepareStatement("select count(*) from EmployeeUserAccounts " +
-                     "where email = ?;")
+             PreparedStatement p = c.prepareStatement("select count(*) from EmployeeUserAccounts EUA " +
+                     "inner join Employees E on E.id = EUA.id where E.email = ?;")
         ) {
             p.setString(1, email);
             try (ResultSet r = p.executeQuery()) {
