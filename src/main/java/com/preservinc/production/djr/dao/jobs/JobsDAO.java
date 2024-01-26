@@ -187,11 +187,45 @@ public class JobsDAO implements IJobsDAO {
         else if (startDate != null && endDate != null) p1_where_clause = " and reportDate between ? and ?;"
 
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p1 = c.prepareStatement("select sum(crewSize), avg(crewSize) from Reports where job_id = ?%s".formatted(p1_where_clause));
+             PreparedStatement p1 = c.prepareStatement("select sum(crewSize) as total_man_power, avg(crewSize) as avg_man_power from Reports where job_id = ?%s".formatted(p1_where_clause));
              PreparedStatement p2 = c.prepareStatement("select reportDate from Reports where job_id = ?%s".formatted(p1_where_clause));
         ) {
-            // todo finish implementation
-            	
+            p1.setInt(1, id);
+            p2.setInt(1, id);
+            
+            if (startDate != null) {
+                p1.setDate(2, startDate);
+                p2.setDate(2, startDate);
+                p1.setDate(3, endDate);
+                p2.setDate(3, endDate); 
+            }
+            
+            try (ResultSet r1 = p1.executeQuery();
+                 ResultSet r2 = p2.executeQuery();
+            ) {
+                Integer totalManDays = null;
+                Double avgDailyManPower = null;
+                if (r1.next()) {
+                    totalManPower = r1.getInt("total_man_power");
+                    avgManPower = r1.getDouble("avg_man_power");
+                }
+                
+                Set<LocalDate> reportDates = new HashSet<>();
+                while (r2.next()) reportDates.add(r2.getDate(1).toLocalDate());
+                calculateMissingDates(startDate, endDate, reportDates);
+                return new JobStats(totalManDays, avgDailyManPower, reportDates);
+            }
         }
+    }
+    
+    private void calculateMissingDates(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Set<LocalDate> dates) {
+    Period period = Period.between(startDate, endDate);
+    dates.remove(IntStream.builder()
+        .range(0, period.getDays())
+        .mapToObj((i) -> startDate.plus(i))
+        .filter((date) -> date.getDayOfWeek() != DayOfWeek.SATURDAY)
+        .filter((date) -> date.getDayOfWeek() != DayOfWeek.SUNDAY)
+        .filter((date) -> dates.contains(date))
+        .collect());
     }
 }

@@ -1,1 +1,1 @@
-public record JobStats (int id, int totalManPower, double avgManPower, List<LocalDate> missingReports) {}
+public record JobStats (int totalManDays, double avgDailyManPower, Collection<LocalDate> missingReports) {}
