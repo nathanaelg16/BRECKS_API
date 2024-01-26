@@ -13,9 +13,10 @@ import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
 import java.sql.*;
-import java.sql.Date;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 @Repository
@@ -108,7 +109,7 @@ public class JobsDAO implements IJobsDAO {
                             final LocalDate endDateBefore, final JobStatus status) throws SQLException {
         logger.info("""
                 [JobsDAO] Searching for jobs with the following params:
-                \tid: {}
+                \tteamID: {}
                 \tstartDateAfter: {}
                 \tstartDateBefore: {}
                 \tendDateAfter: {}
@@ -148,7 +149,7 @@ public class JobsDAO implements IJobsDAO {
             paramSetters.add((p, i) -> p.setString(i, status.getStatus()));
         }
 
-        queryBuilder.append(";");
+        queryBuilder.append(" order by J.address;");
 
         List<Job> results = new ArrayList<>();
 

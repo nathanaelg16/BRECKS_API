@@ -4,6 +4,7 @@ import com.preservinc.production.djr.exception.auth.AccessKeyException;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -59,5 +60,10 @@ public class AccessKeyManager {
                 .stream()
                 .filter((entry) -> !entry.getValue().isValid())
                 .forEach((entry) -> this.accessKeys.remove(entry.getKey()));
+    }
+
+    public void revokeAccessKey(@NotNull AccessKey accessKey) {
+        logger.info("[Access Key Manager] Revoking access key: {}", accessKey);
+        this.accessKeys.remove(accessKey.hash());
     }
 }

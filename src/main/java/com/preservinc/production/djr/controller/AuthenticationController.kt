@@ -1,6 +1,7 @@
 package com.preservinc.production.djr.controller
 
 import com.preservinc.production.djr.auth.accesskey.AccessKey
+import com.preservinc.production.djr.auth.accesskey.AccessKeyManager
 import com.preservinc.production.djr.auth.jwt.AuthorizationToken
 import com.preservinc.production.djr.exception.DatabaseException
 import com.preservinc.production.djr.request.auth.UserLoginRequest
@@ -17,7 +18,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-class AuthenticationController @Autowired constructor(private val authorizationService: IAuthorizationService) {
+class AuthenticationController @Autowired constructor(private val authorizationService: IAuthorizationService, private val accessKeyManager: AccessKeyManager) {
     @PostMapping("/login")
     fun  login(@RequestBody userLogin: UserLoginRequest) : ResponseEntity<AuthorizationToken> {
         logger.info("[Auth Controller] Login request received for user: {}", userLogin.username)
@@ -35,7 +36,12 @@ class AuthenticationController @Autowired constructor(private val authorizationS
     fun register(@RequestBody registration: UserRegistrationRequest, @RequestAttribute accessKey: AccessKey) : ResponseEntity<Any> {
         return try {
             val token = this.authorizationService.registerUser(registration, accessKey.email())
-            ResponseEntity.status(if (token != null) HttpStatus.OK else HttpStatus.BAD_REQUEST).body(token)
+            if (token != null) {
+                this.accessKeyManager.revokeAccessKey(accessKey)
+                ResponseEntity.status(HttpStatus.OK).body(token)
+            } else {
+                ResponseEntity.status(HttpStatus.BAD_REQUEST).build()
+            }
         } catch (e: DatabaseException) {
             logger.error(e)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse("Unable to register user", "An unexpected database error occurred"))
