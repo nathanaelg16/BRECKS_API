@@ -14,4 +14,5 @@ public interface IJobsDAO {
     void updateJobStatus(Integer id, JobStatus status) throws SQLException;
     List<Job> search(Integer teamID, LocalDate startDateAfter, LocalDate startDateBefore, LocalDate endDateAfter,
                      LocalDate endDateBefore, JobStatus status) throws SQLException;
+    JobStats getStats(int id, LocalDate startDate, LocalDate endDate) throws SQLException;
 }

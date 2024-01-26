@@ -102,4 +102,41 @@ public class JobService implements IJobService {
             return false;
         }
     }
+
+    @Override
+    public JobStats getStats(int id, @NonNull String basis, String value) {
+        logger.info("[Job Service] Getting stats for job id `{}` with basis `{}` and value `{}`", id, basis, value);
+        
+        LocalDate startDate = null, endDate = null;
+
+        if (value == null) {
+            if (!basis.equals("ytd")) throw new BadRequestException();
+        } else {
+            try {
+                startDate = LocalDate.parse(value);
+                switch (basis) {
+                    case "week":
+                        if (!startDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) throw new BadRequestException();
+                        LocalDate endDate = startDate.plusDays(5);
+                        break;
+                    case "month":
+                        if (!startDate.getDayOfMonth() == 1) throw new BadRequestException();
+                        LocalDate endDate = startDate.plusMonths(1).minusDays(1);
+                        break;
+                    case "year":
+                        if (!startDate.getDayOfYear() == 1) throw new BadRequestException();
+                        Local endDate = startDate.withDayOfYear(startDate.isLeapYear() ? 366 : 365);
+                        break;
+                    default:
+                        throw new BadRequestException();
+                }
+            } catch (DateTimeParseException e) {
+                logger.error("[Job Service] An error occurred parsing date from value `{}`: {}", value, e.getMessage());
+                logger.error(e);
+                throw new BadRequestException();
+            }
+        }
+        
+        return this.jobsDAO.getStats(id, startDate, endDate);
+    }
 }

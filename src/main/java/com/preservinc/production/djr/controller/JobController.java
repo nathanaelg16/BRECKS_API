@@ -57,4 +57,10 @@ public class JobController {
         if (this.jobService.createJobSite(request)) return ResponseEntity.ok().build();
         else return ResponseEntity.badRequest().build();
     }
+
+    @GetMapping("/{id}/stats")
+    public ResponseEntity<JobStats> getJobStats(@PathVariable("id") Integer id, @RequestParam String basis, @RequestParam(required = false) String value) {
+        logger.info("[Job Controller] Received request for the stats of job ID `{}` with basis `{}` and value `{}`", id, basis, value);
+        return ResponseEntity.ok(this.jobService.getStats(id, basis, value));
+    }
 }

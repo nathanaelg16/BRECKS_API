@@ -177,4 +177,20 @@ public class JobsDAO implements IJobsDAO {
 
         return results;
     }
+
+    @Override
+    public JobStats getStats(int id, LocalDate startDate, LocalDate endDate) {
+        logger.info("[Jobs DAO] Retrieving stats for job id `{}` with start date `{}` and end date `{}`", id, startDate, endDate);
+
+        String p1_where_clause;
+        if (startDate == null && endDate == null) p1_where_clause = ";"
+        else if (startDate != null && endDate != null) p1_where_clause = " and reportDate between ? and ?;"
+
+        try (Connection c = this.dataSource.getConnection();
+             PreparedStatement p1 = c.prepareStatement("select sum(crewSize), avg(crewSize) from Reports where job_id = ?%s".formatted(p1_where_clause));
+             PreparedStatement p2 = c.prepareStatement("select reportDate from Reports where job_id = ?%s".formatted(p1_where_clause));
+        ) {
+            // todo finish implementation
+        }
+    }
 }

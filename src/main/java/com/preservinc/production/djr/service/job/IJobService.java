@@ -16,4 +16,6 @@ public interface IJobService {
     boolean createJobSite(CreateJobSiteRequest request);
 
     boolean changeJobStatus(int id, JobStatus status);
+
+    JobStats getStats(int id, @NonNull String basis, @NonNull String value);
 }
