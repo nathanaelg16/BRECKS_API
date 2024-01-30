@@ -1,22 +1,32 @@
 package com.preservinc.production.djr.dao.jobs;
 
 import com.preservinc.production.djr.dao.teams.ITeamsDAO;
+import com.preservinc.production.djr.exception.DatabaseException;
 import com.preservinc.production.djr.model.employee.Employee;
 import com.preservinc.production.djr.model.job.Job;
+import com.preservinc.production.djr.model.job.JobStats;
 import com.preservinc.production.djr.model.job.JobStatus;
+import com.preservinc.production.djr.model.job.JobStatusHistory;
 import com.preservinc.production.djr.model.team.Team;
+import com.preservinc.production.djr.model.time.Interval;
 import com.preservinc.production.djr.util.function.CheckedBiConsumer;
+import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
-import java.sql.*;
 import java.sql.Date;
+import java.sql.*;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 @Repository
 public class JobsDAO implements IJobsDAO {
@@ -77,15 +87,16 @@ public class JobsDAO implements IJobsDAO {
     }
 
     @Override
-    public void insertJob(String address, LocalDate startDate, int teamID, JobStatus status) throws SQLException {
+    public void insertJob(String address, String identifier, LocalDate startDate, int teamID, JobStatus status) throws SQLException {
         logger.info("[JobsDAO] Inserting new job...");
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p = c.prepareStatement("insert into Jobs (address, team_id, start_date, status) value (?, ?, ?, ?);")
+             PreparedStatement p = c.prepareStatement("call new_job_site(?, ?, ?, ?, ?);")
         ) {
             p.setString(1, address);
-            p.setInt(2, teamID);
-            p.setDate(3, Date.valueOf(startDate));
-            p.setString(4, status.getStatus());
+            p.setString(2, identifier);
+            p.setInt(3, teamID);
+            p.setDate(4, Date.valueOf(startDate));
+            p.setString(5, status.getStatus());
             p.executeUpdate();
         }
     }
@@ -94,10 +105,25 @@ public class JobsDAO implements IJobsDAO {
     public void updateJobStatus(Integer id, JobStatus status) throws SQLException {
         logger.info("[JobsDAO] Updating job status...");
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p = c.prepareStatement("update Jobs set status = ? where id = ?;")
+             PreparedStatement p = c.prepareStatement("call set_job_status(?, ?, ?, null);")
         ) {
-            p.setString(1, status.getStatus());
-            p.setInt(2, id);
+            p.setInt(1, id);
+            p.setString(2, status.getStatus());
+            p.setDate(3, Date.valueOf(LocalDate.now(ZoneId.of("America/New_York"))));
+            p.executeUpdate();
+        }
+    }
+
+    @Override
+    public void updateJobStatus(Integer id, JobStatus status, LocalDate startDate, LocalDate endDate) throws SQLException {
+        logger.info("[JobsDAO] Updating job status...");
+        try (Connection c = this.dataSource.getConnection();
+             PreparedStatement p = c.prepareStatement("call set_job_status(?, ?, ?, ?);")
+        ) {
+            p.setInt(1, id);
+            p.setString(2, status.getStatus());
+            p.setDate(3, Date.valueOf(startDate));
+            p.setDate(4, Date.valueOf(endDate));
             p.executeUpdate();
         }
     }
@@ -179,53 +205,104 @@ public class JobsDAO implements IJobsDAO {
     }
 
     @Override
-    public JobStats getStats(int id, LocalDate startDate, LocalDate endDate) {
+    public JobStats getStats(int id, LocalDate startDate, LocalDate endDate, boolean countSaturdays, boolean countSundays, boolean countHolidays) throws SQLException {
         logger.info("[Jobs DAO] Retrieving stats for job id `{}` with start date `{}` and end date `{}`", id, startDate, endDate);
 
-        String p1_where_clause;
-        if (startDate == null && endDate == null) p1_where_clause = ";"
-        else if (startDate != null && endDate != null) p1_where_clause = " and reportDate between ? and ?;"
+        String date_filter_clause;
+        if (startDate == null && endDate == null) date_filter_clause = "";
+        else if (startDate != null && endDate != null) date_filter_clause = " and reportDate between ? and ?";
+        else throw new RuntimeException("Start Date and End Date must be both null or neither null");
 
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p1 = c.prepareStatement("select sum(crewSize) as total_man_power, avg(crewSize) as avg_man_power from Reports where job_id = ?%s".formatted(p1_where_clause));
-             PreparedStatement p2 = c.prepareStatement("select reportDate from Reports where job_id = ?%s".formatted(p1_where_clause));
+             PreparedStatement p1 = c.prepareStatement(("select sum(R.crewSize) as total_man_power, avg(R.crewSize) " +
+                     "as avg_man_power from Reports R inner join Jobs J on R.job_id = J.id where J.id = ?%s;").formatted(date_filter_clause));
+             PreparedStatement p2 = c.prepareStatement(("select reportDate from Reports " +
+                     "where job_id = ?%s order by reportDate;").formatted(date_filter_clause));
+             PreparedStatement p3 = c.prepareStatement("call get_job_statuses_on_date_range(?, ?, ?);")
         ) {
             p1.setInt(1, id);
             p2.setInt(1, id);
             
             if (startDate != null) {
-                p1.setDate(2, startDate);
-                p2.setDate(2, startDate);
-                p1.setDate(3, endDate);
-                p2.setDate(3, endDate); 
-            }
-            
-            try (ResultSet r1 = p1.executeQuery();
-                 ResultSet r2 = p2.executeQuery();
-            ) {
-                Integer totalManDays = null;
-                Double avgDailyManPower = null;
-                if (r1.next()) {
-                    totalManPower = r1.getInt("total_man_power");
-                    avgManPower = r1.getDouble("avg_man_power");
+                p1.setDate(2, Date.valueOf(startDate));
+                p2.setDate(2, Date.valueOf(startDate));
+                p1.setDate(3, Date.valueOf(endDate));
+                p2.setDate(3, Date.valueOf(endDate));
+            } else {
+                try (PreparedStatement p4 = c.prepareStatement("select valid_start from JobStatus where job_id = ? " +
+                        "and transaction_end > current_timestamp() and status = 'ACTIVE' order by valid_start limit 1;");
+                     PreparedStatement p5 = c.prepareStatement("select valid_end from JobStatus where job_id = ? " +
+                             "and transaction_end > current_timestamp() and (status = 'ACTIVE' or status = 'COMPLETED') " +
+                             "order by valid_end desc limit 1;")
+                ) {
+                    p4.setInt(1, id);
+                    p5.setInt(1, id);
+
+                    try (ResultSet r4 = p4.executeQuery(); ResultSet r5 = p5.executeQuery()) {
+                        if (r4.next()) startDate = r4.getDate("valid_start").toLocalDate();
+                        if (r5.next()) endDate = r5.getDate("valid_end").toLocalDate();
+                        assert startDate != null;
+                        assert endDate != null;
+                        if (endDate.equals(LocalDate.of(9999, 12, 31)))
+                            endDate = LocalDate.now(ZoneId.of("America/New_York"));
+                    }
                 }
-                
-                Set<LocalDate> reportDates = new HashSet<>();
-                while (r2.next()) reportDates.add(r2.getDate(1).toLocalDate());
-                calculateMissingDates(startDate, endDate, reportDates);
-                return new JobStats(totalManDays, avgDailyManPower, reportDates);
+            }
+
+            p3.setInt(1, id);
+            p3.setDate(2, Date.valueOf(startDate));
+            p3.setDate(3, Date.valueOf(endDate));
+            
+            try (ResultSet r1 = p1.executeQuery(); ResultSet r2 = p2.executeQuery(); ResultSet r3 = p3.executeQuery()) {
+                int totalManDays;
+                double avgDailyManPower;
+
+                if (r1.next()) {
+                    totalManDays = r1.getInt("total_man_power");
+                    avgDailyManPower = r1.getDouble("avg_man_power");
+
+                    Set<LocalDate> reportDates = new HashSet<>();
+                    while (r2.next()) reportDates.add(r2.getDate(1).toLocalDate());
+
+                    JobStatusHistory.Builder jobStatusHistoryBuilder = new JobStatusHistory.Builder();
+                    while (r3.next()) jobStatusHistoryBuilder = jobStatusHistoryBuilder
+                            .addInterval(JobStatus.of(r3.getString("status")),
+                                    Interval.between(r3.getDate("valid_start").toLocalDate(),
+                                                    r3.getDate("valid_end").toLocalDate()));
+
+                    List<LocalDate> missingReportDates = calculateMissingDates(startDate, endDate, reportDates, jobStatusHistoryBuilder.build(), countSaturdays, countSundays, countHolidays);
+
+                    return new JobStats(totalManDays, avgDailyManPower, missingReportDates);
+                }
             }
         }
+
+        throw new DatabaseException();
     }
     
-    private void calculateMissingDates(@NonNull LocalDate startDate, @NonNull LocalDate endDate, Set<LocalDate> dates) {
+    private List<LocalDate> calculateMissingDates(@NonNull LocalDate startDate,
+                                              @NonNull LocalDate endDate,
+                                              @NonNull Set<LocalDate> dates,
+                                              @NonNull JobStatusHistory jobStatusHistory,
+                                              @NonNull Set<LocalDate> holidays,
+                                              boolean countSaturdays, boolean countSundays, boolean countHolidays) {
     Period period = Period.between(startDate, endDate);
-    dates.remove(IntStream.builder()
-        .range(0, period.getDays())
-        .mapToObj((i) -> startDate.plus(i))
-        .filter((date) -> date.getDayOfWeek() != DayOfWeek.SATURDAY)
-        .filter((date) -> date.getDayOfWeek() != DayOfWeek.SUNDAY)
-        .filter((date) -> dates.contains(date))
-        .collect());
+    List<Interval> activeIntervals = jobStatusHistory.getActiveIntervals();
+    List<Interval> completedIntervals = jobStatusHistory.getCompletedIntervals();
+    Predicate<LocalDate> saturdayFilter = countSaturdays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SATURDAY;
+    Predicate<LocalDate> sundayFilter = countSundays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SUNDAY;
+    Predicate<LocalDate> holidayFilter = countHolidays ? (date) -> true : (date) -> !holidays.contains(date);
+    return IntStream.range(0, period.getDays())
+            .parallel()
+            .mapToObj(startDate::plusDays)
+            .filter(saturdayFilter)
+            .filter(sundayFilter)
+            .filter(holidayFilter)
+            .filter((date) -> !dates.contains(date))
+            .filter((date) -> activeIntervals.stream().parallel().anyMatch((interval) -> interval.contains(date))
+                    || completedIntervals.stream().parallel().anyMatch((interval) -> interval.contains(date)))
+            .toList();
     }
 }
+
+// todo disallow use of NOT_STARTED job status

@@ -1,18 +1,24 @@
 package com.preservinc.production.djr.service.job;
 
 import com.preservinc.production.djr.dao.jobs.IJobsDAO;
+import com.preservinc.production.djr.exception.BadRequestException;
+import com.preservinc.production.djr.exception.DatabaseException;
 import com.preservinc.production.djr.exception.ServerException;
 import com.preservinc.production.djr.model.job.Job;
+import com.preservinc.production.djr.model.job.JobStats;
 import com.preservinc.production.djr.model.job.JobStatus;
 import com.preservinc.production.djr.request.job.CreateJobSiteRequest;
+import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -96,7 +102,7 @@ public class JobService implements IJobService {
         logger.info("[Job Service] Setting status to: {}", status);
 
         try {
-            jobsDAO.insertJob(request.getAddress(), request.getStartDate(), request.getTeamID(), status);
+            jobsDAO.insertJob(request.getAddress(), null, request.getStartDate(), request.getTeamID(), status);
             return true;
         } catch (SQLException e) {
             return false;
@@ -106,37 +112,49 @@ public class JobService implements IJobService {
     @Override
     public JobStats getStats(int id, @NonNull String basis, String value) {
         logger.info("[Job Service] Getting stats for job id `{}` with basis `{}` and value `{}`", id, basis, value);
-        
-        LocalDate startDate = null, endDate = null;
+
+        // todo implement getStats for range of dates
+
+        LocalDate startDate, endDate;
 
         if (value == null) {
-            if (!basis.equals("ytd")) throw new BadRequestException();
+            if (basis.equals("ytd")) {
+                endDate = LocalDate.now(ZoneId.of("America/New_York"));
+                startDate = endDate.withDayOfYear(1);
+            } else if (basis.equals("lifetime")) {
+                startDate = null;
+                endDate = null;
+            } else throw new BadRequestException();
         } else {
             try {
                 startDate = LocalDate.parse(value);
-                switch (basis) {
-                    case "week":
+                endDate = switch (basis) {
+                    case "week" -> {
                         if (!startDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) throw new BadRequestException();
-                        LocalDate endDate = startDate.plusDays(5);
-                        break;
-                    case "month":
-                        if (!startDate.getDayOfMonth() == 1) throw new BadRequestException();
-                        LocalDate endDate = startDate.plusMonths(1).minusDays(1);
-                        break;
-                    case "year":
-                        if (!startDate.getDayOfYear() == 1) throw new BadRequestException();
-                        Local endDate = startDate.withDayOfYear(startDate.isLeapYear() ? 366 : 365);
-                        break;
-                    default:
-                        throw new BadRequestException();
-                }
+                        yield startDate.plusDays(5);
+                    }
+                    case "month" -> {
+                        if (startDate.getDayOfMonth() != 1) throw new BadRequestException();
+                        yield startDate.plusMonths(1).minusDays(1);
+                    }
+                    case "year" -> {
+                        if (startDate.getDayOfYear() != 1) throw new BadRequestException();
+                        yield startDate.withDayOfYear(startDate.isLeapYear() ? 366 : 365);
+                    }
+                    default -> throw new BadRequestException();
+                };
             } catch (DateTimeParseException e) {
                 logger.error("[Job Service] An error occurred parsing date from value `{}`: {}", value, e.getMessage());
                 logger.error(e);
                 throw new BadRequestException();
             }
         }
-        
-        return this.jobsDAO.getStats(id, startDate, endDate);
+
+        try {
+            return this.jobsDAO.getStats(id, startDate, endDate);
+        } catch (SQLException e) {
+            logger.error(e);
+            throw new DatabaseException();
+        }
     }
 }
