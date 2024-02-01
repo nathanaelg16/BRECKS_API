@@ -194,7 +194,7 @@ public class JobsDAO implements IJobsDAO {
         ) {
             p1.setInt(1, id);
             p2.setInt(1, id);
-            
+
             if (startDate != null) {
                 p1.setDate(2, Date.valueOf(startDate));
                 p2.setDate(2, Date.valueOf(startDate));
@@ -223,7 +223,7 @@ public class JobsDAO implements IJobsDAO {
             c1.setInt(1, id);
             c1.setDate(2, Date.valueOf(startDate));
             c1.setDate(3, Date.valueOf(endDate));
-            
+
             try (ResultSet r1 = p1.executeQuery(); ResultSet r2 = p2.executeQuery(); ResultSet rc1 = c1.executeQuery()) {
                 int totalManDays;
                 double avgDailyManPower;
@@ -250,12 +250,12 @@ public class JobsDAO implements IJobsDAO {
 
         throw new DatabaseException();
     }
-    
+
     private List<LocalDate> calculateMissingDates(@NonNull LocalDate startDate,
-                                              @NonNull LocalDate endDate,
-                                              @NonNull Set<LocalDate> dates,
-                                              @NonNull JobStatusHistory jobStatusHistory,
-                                              boolean countSaturdays, boolean countSundays) {
+                                                  @NonNull LocalDate endDate,
+                                                  @NonNull Set<LocalDate> dates,
+                                                  @NonNull JobStatusHistory jobStatusHistory,
+                                                  boolean countSaturdays, boolean countSundays) {
         // todo implement filtering of company holidays
         Period period = Period.between(startDate, endDate);
         List<Interval> activeIntervals = jobStatusHistory.getActiveIntervals();
