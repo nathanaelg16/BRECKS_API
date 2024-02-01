@@ -151,7 +151,7 @@ public class JobService implements IJobService {
         }
 
         try {
-            return this.jobsDAO.getStats(id, startDate, endDate);
+            return this.jobsDAO.getStats(id, startDate, endDate, false, false);
         } catch (SQLException e) {
             logger.error(e);
             throw new DatabaseException();

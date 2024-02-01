@@ -9,7 +9,6 @@ import com.preservinc.production.djr.model.job.JobStatus;
 import com.preservinc.production.djr.model.job.JobStatusHistory;
 import com.preservinc.production.djr.model.team.Team;
 import com.preservinc.production.djr.model.time.Interval;
-import com.preservinc.production.djr.util.function.CheckedBiConsumer;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -58,7 +57,10 @@ public class JobsDAO implements IJobsDAO {
     public Job getJob(int id) throws SQLException {
         logger.info("[JobsDAO] Getting job details for job ID {}", id);
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p1 = c.prepareStatement("SELECT * FROM Jobs WHERE id = ?;")
+             PreparedStatement p1 = c.prepareStatement("select *, " +
+                     "job_start_date(id) as start_date, " +
+                     "job_last_active_date(id) as end_date, " +
+                     "current_job_status(id) as status from Jobs where id = ?;")
         ) {
             p1.setInt(1, id);
             try (ResultSet r = p1.executeQuery()) {
@@ -141,49 +143,19 @@ public class JobsDAO implements IJobsDAO {
                 \tendDateBefore: {}
                 \tstatus: {}""", teamID, startDateAfter, startDateBefore, endDateAfter, endDateBefore, status);
 
-        StringBuilder queryBuilder = new StringBuilder("select J.*, T.pm from Jobs J inner join Teams T on J.team_id = T.id where 1=1");
-        List<CheckedBiConsumer<PreparedStatement, Integer, SQLException>> paramSetters = new ArrayList<>();
-
-        if (teamID != null) {
-            queryBuilder.append(" and J.team_id = ?");
-            paramSetters.add((p, i) -> p.setInt(i, teamID));
-        }
-
-        if (startDateAfter != null) {
-            queryBuilder.append(" and J.start_date >= ?");
-            paramSetters.add((p, i) -> p.setDate(i, Date.valueOf(startDateAfter)));
-        }
-
-        if (startDateBefore != null) {
-            queryBuilder.append(" and J.start_date <= ?");
-            paramSetters.add((p, i) -> p.setDate(i, Date.valueOf(startDateBefore)));
-        }
-
-        if (endDateAfter != null) {
-            queryBuilder.append(" and J.end_date >= ?");
-            paramSetters.add((p, i) -> p.setDate(i, Date.valueOf(endDateAfter)));
-        }
-
-        if (endDateBefore != null) {
-            queryBuilder.append(" and J.end_date <= ?");
-            paramSetters.add((p, i) -> p.setDate(i, Date.valueOf(endDateBefore)));
-        }
-
-        if (status != null) {
-            queryBuilder.append(" and status = ?");
-            paramSetters.add((p, i) -> p.setString(i, status.getStatus()));
-        }
-
-        queryBuilder.append(";");
-
         List<Job> results = new ArrayList<>();
 
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p = c.prepareStatement(queryBuilder.toString())
+             CallableStatement cs = c.prepareCall("call search_jobs(?, ?, ?, ?, ?, ?);")
         ) {
-            for (int i = 0; i < paramSetters.size();) paramSetters.get(i).accept(p, ++i);
-            logger.info("SQL QUERY: {}", p);
-            try (ResultSet r = p.executeQuery()) {
+            Function<LocalDate, Date> toSQLDate = (localdate) -> localdate == null ? null : Date.valueOf(localdate);
+            cs.setObject(1, teamID, Types.INTEGER);
+            cs.setDate(2, toSQLDate.apply(startDateAfter));
+            cs.setDate(3, toSQLDate.apply(startDateBefore));
+            cs.setDate(4, toSQLDate.apply(endDateAfter));
+            cs.setDate(5, toSQLDate.apply(endDateBefore));
+            cs.setString(6, status == null ? null : status.getStatus());
+            try (ResultSet r = cs.executeQuery()) {
                 while (r.next()) {
                     Optional<Date> rStartDate = Optional.ofNullable(r.getDate("start_date"));
                     Optional<Date> rEndDate = Optional.ofNullable(r.getDate("end_date"));
@@ -205,7 +177,7 @@ public class JobsDAO implements IJobsDAO {
     }
 
     @Override
-    public JobStats getStats(int id, LocalDate startDate, LocalDate endDate, boolean countSaturdays, boolean countSundays, boolean countHolidays) throws SQLException {
+    public JobStats getStats(int id, LocalDate startDate, LocalDate endDate, boolean countSaturdays, boolean countSundays) throws SQLException {
         logger.info("[Jobs DAO] Retrieving stats for job id `{}` with start date `{}` and end date `{}`", id, startDate, endDate);
 
         String date_filter_clause;
@@ -218,7 +190,7 @@ public class JobsDAO implements IJobsDAO {
                      "as avg_man_power from Reports R inner join Jobs J on R.job_id = J.id where J.id = ?%s;").formatted(date_filter_clause));
              PreparedStatement p2 = c.prepareStatement(("select reportDate from Reports " +
                      "where job_id = ?%s order by reportDate;").formatted(date_filter_clause));
-             PreparedStatement p3 = c.prepareStatement("call get_job_statuses_on_date_range(?, ?, ?);")
+             CallableStatement c1 = c.prepareCall("call get_job_statuses_on_date_range(?, ?, ?);")
         ) {
             p1.setInt(1, id);
             p2.setInt(1, id);
@@ -229,31 +201,30 @@ public class JobsDAO implements IJobsDAO {
                 p1.setDate(3, Date.valueOf(endDate));
                 p2.setDate(3, Date.valueOf(endDate));
             } else {
-                try (PreparedStatement p4 = c.prepareStatement("select valid_start from JobStatus where job_id = ? " +
-                        "and transaction_end > current_timestamp() and status = 'ACTIVE' order by valid_start limit 1;");
-                     PreparedStatement p5 = c.prepareStatement("select valid_end from JobStatus where job_id = ? " +
-                             "and transaction_end > current_timestamp() and (status = 'ACTIVE' or status = 'COMPLETED') " +
-                             "order by valid_end desc limit 1;")
-                ) {
-                    p4.setInt(1, id);
-                    p5.setInt(1, id);
+                try (PreparedStatement p3 = c.prepareStatement("select job_start_date(?) as start_date, " +
+                        "job_last_active_date(?) as last_active_date;")) {
+                    p3.setInt(1, id);
+                    p3.setInt(2, id);
 
-                    try (ResultSet r4 = p4.executeQuery(); ResultSet r5 = p5.executeQuery()) {
-                        if (r4.next()) startDate = r4.getDate("valid_start").toLocalDate();
-                        if (r5.next()) endDate = r5.getDate("valid_end").toLocalDate();
-                        assert startDate != null;
-                        assert endDate != null;
-                        if (endDate.equals(LocalDate.of(9999, 12, 31)))
-                            endDate = LocalDate.now(ZoneId.of("America/New_York"));
+                    try (ResultSet r3 = p3.executeQuery()) {
+                        if (r3.next()) {
+                            startDate = r3.getDate("start_date").toLocalDate();
+                            endDate = r3.getDate("end_date").toLocalDate();
+                        }
                     }
                 }
+
+                assert startDate != null;
+                assert endDate != null;
+                if (endDate.equals(LocalDate.of(9999, 12, 31)))
+                    endDate = LocalDate.now(ZoneId.of("America/New_York"));
             }
 
-            p3.setInt(1, id);
-            p3.setDate(2, Date.valueOf(startDate));
-            p3.setDate(3, Date.valueOf(endDate));
+            c1.setInt(1, id);
+            c1.setDate(2, Date.valueOf(startDate));
+            c1.setDate(3, Date.valueOf(endDate));
             
-            try (ResultSet r1 = p1.executeQuery(); ResultSet r2 = p2.executeQuery(); ResultSet r3 = p3.executeQuery()) {
+            try (ResultSet r1 = p1.executeQuery(); ResultSet r2 = p2.executeQuery(); ResultSet rc1 = c1.executeQuery()) {
                 int totalManDays;
                 double avgDailyManPower;
 
@@ -265,12 +236,12 @@ public class JobsDAO implements IJobsDAO {
                     while (r2.next()) reportDates.add(r2.getDate(1).toLocalDate());
 
                     JobStatusHistory.Builder jobStatusHistoryBuilder = new JobStatusHistory.Builder();
-                    while (r3.next()) jobStatusHistoryBuilder = jobStatusHistoryBuilder
-                            .addInterval(JobStatus.of(r3.getString("status")),
-                                    Interval.between(r3.getDate("valid_start").toLocalDate(),
-                                                    r3.getDate("valid_end").toLocalDate()));
+                    while (rc1.next()) jobStatusHistoryBuilder = jobStatusHistoryBuilder
+                            .addInterval(JobStatus.of(rc1.getString("status")),
+                                    Interval.between(rc1.getDate("valid_start").toLocalDate(),
+                                            rc1.getDate("valid_end").toLocalDate()));
 
-                    List<LocalDate> missingReportDates = calculateMissingDates(startDate, endDate, reportDates, jobStatusHistoryBuilder.build(), countSaturdays, countSundays, countHolidays);
+                    List<LocalDate> missingReportDates = calculateMissingDates(startDate, endDate, reportDates, jobStatusHistoryBuilder.build(), countSaturdays, countSundays);
 
                     return new JobStats(totalManDays, avgDailyManPower, missingReportDates);
                 }
@@ -284,24 +255,22 @@ public class JobsDAO implements IJobsDAO {
                                               @NonNull LocalDate endDate,
                                               @NonNull Set<LocalDate> dates,
                                               @NonNull JobStatusHistory jobStatusHistory,
-                                              @NonNull Set<LocalDate> holidays,
-                                              boolean countSaturdays, boolean countSundays, boolean countHolidays) {
-    Period period = Period.between(startDate, endDate);
-    List<Interval> activeIntervals = jobStatusHistory.getActiveIntervals();
-    List<Interval> completedIntervals = jobStatusHistory.getCompletedIntervals();
-    Predicate<LocalDate> saturdayFilter = countSaturdays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SATURDAY;
-    Predicate<LocalDate> sundayFilter = countSundays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SUNDAY;
-    Predicate<LocalDate> holidayFilter = countHolidays ? (date) -> true : (date) -> !holidays.contains(date);
-    return IntStream.range(0, period.getDays())
-            .parallel()
-            .mapToObj(startDate::plusDays)
-            .filter(saturdayFilter)
-            .filter(sundayFilter)
-            .filter(holidayFilter)
-            .filter((date) -> !dates.contains(date))
-            .filter((date) -> activeIntervals.stream().parallel().anyMatch((interval) -> interval.contains(date))
-                    || completedIntervals.stream().parallel().anyMatch((interval) -> interval.contains(date)))
-            .toList();
+                                              boolean countSaturdays, boolean countSundays) {
+        // todo implement filtering of company holidays
+        Period period = Period.between(startDate, endDate);
+        List<Interval> activeIntervals = jobStatusHistory.getActiveIntervals();
+        List<Interval> completedIntervals = jobStatusHistory.getCompletedIntervals();
+        Predicate<LocalDate> saturdayFilter = countSaturdays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SATURDAY;
+        Predicate<LocalDate> sundayFilter = countSundays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SUNDAY;
+        return IntStream.range(0, period.getDays())
+                .parallel()
+                .mapToObj(startDate::plusDays)
+                .filter(saturdayFilter)
+                .filter(sundayFilter)
+                .filter((date) -> !dates.contains(date))
+                .filter((date) -> activeIntervals.stream().parallel().anyMatch((interval) -> interval.contains(date))
+                        || completedIntervals.stream().parallel().anyMatch((interval) -> interval.contains(date)))
+                .toList();
     }
 }
 

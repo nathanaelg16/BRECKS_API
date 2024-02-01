@@ -26,6 +26,8 @@ public class JobsDAOTest {
     private final ITeamsDAO teamsDAO;
     private JobsDAO jobsDAO;
 
+    // todo rewrite tests
+
     static class TeamsDAOMock implements ITeamsDAO {
         @Override
         public Team getTeam(int teamID, boolean includeJobs) {

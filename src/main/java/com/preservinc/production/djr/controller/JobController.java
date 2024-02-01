@@ -1,6 +1,7 @@
 package com.preservinc.production.djr.controller;
 
 import com.preservinc.production.djr.model.job.Job;
+import com.preservinc.production.djr.model.job.JobStats;
 import com.preservinc.production.djr.request.job.CreateJobSiteRequest;
 import com.preservinc.production.djr.request.job.StatusChangeRequest;
 import com.preservinc.production.djr.service.job.IJobService;
