@@ -82,7 +82,7 @@ public class EmailServiceTest {
         report.setReportBy(employee);
         report.setReportDate(LocalDate.now(ZoneId.of("America/New_York")));
 
-        assertDoesNotThrow(() -> emailService.sendReportSubmissionNotification(report, new Job(1, "123 Main St", null, null, JobStatus.ACTIVE, team)));
+        assertDoesNotThrow(() -> emailService.sendReportSubmissionNotification(report, new Job(1, null, "123 Main St", null, null, JobStatus.ACTIVE, team)));
     }
 
     @Test
@@ -93,7 +93,7 @@ public class EmailServiceTest {
 
         File report = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sampleReport.pdf")).toURI());
 
-        assertDoesNotThrow(() -> emailService.sendReportEmail(employee, new Job(1, "123 Main St", null, null, JobStatus.ACTIVE, team), LocalDate.now(), report));
+        assertDoesNotThrow(() -> emailService.sendReportEmail(employee, new Job(1, null, "123 Main St", null, null, JobStatus.ACTIVE, team), LocalDate.now(), report));
     }
 
     @AfterEach

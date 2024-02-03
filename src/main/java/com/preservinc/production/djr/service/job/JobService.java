@@ -19,6 +19,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoField;
 import java.util.List;
 import java.util.Map;
 
@@ -118,20 +119,28 @@ public class JobService implements IJobService {
         LocalDate startDate, endDate;
 
         if (value == null) {
-            if (basis.equals("ytd")) {
-                endDate = LocalDate.now(ZoneId.of("America/New_York"));
-                startDate = endDate.withDayOfYear(1);
-            } else if (basis.equals("lifetime")) {
-                startDate = null;
-                endDate = null;
-            } else throw new BadRequestException();
+            switch (basis) {
+                case "ytd" -> {
+                    endDate = LocalDate.now(ZoneId.of("America/New_York"));
+                    startDate = endDate.withDayOfYear(1);
+                }
+                case "lifetime" -> {
+                    startDate = null;
+                    endDate = null;
+                }
+                case "week" -> {
+                    startDate = LocalDate.now(ZoneId.of("America/New_York")).with(ChronoField.DAY_OF_WEEK, DayOfWeek.MONDAY.getValue());
+                    endDate = startDate.plusDays(4);
+                }
+                default -> throw new BadRequestException();
+            }
         } else {
             try {
                 startDate = LocalDate.parse(value);
                 endDate = switch (basis) {
                     case "week" -> {
                         if (!startDate.getDayOfWeek().equals(DayOfWeek.MONDAY)) throw new BadRequestException();
-                        yield startDate.plusDays(5);
+                        yield startDate.plusDays(4);
                     }
                     case "month" -> {
                         if (startDate.getDayOfMonth() != 1) throw new BadRequestException();

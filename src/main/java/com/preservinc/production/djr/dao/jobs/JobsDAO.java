@@ -74,6 +74,7 @@ public class JobsDAO implements IJobsDAO {
 
                     return new Job(
                             id,
+                            r.getString("identifier"),
                             r.getString("address"),
                             convertSQLDate.apply(r.getDate("start_date")),
                             convertSQLDate.apply(r.getDate("end_date")),
@@ -160,6 +161,7 @@ public class JobsDAO implements IJobsDAO {
                     Optional<Date> rStartDate = Optional.ofNullable(r.getDate("start_date"));
                     Optional<Date> rEndDate = Optional.ofNullable(r.getDate("end_date"));
                     results.add(new Job(r.getInt("id"),
+                            r.getString("identifier"),
                             r.getString("address"),
                             rStartDate.map(Date::toLocalDate).orElse(null),
                             rEndDate.map(Date::toLocalDate).orElse(null),
@@ -173,6 +175,7 @@ public class JobsDAO implements IJobsDAO {
             }
         }
 
+        logger.info("[Jobs DAO] Search returned {} results", results.size());
         return results;
     }
 
