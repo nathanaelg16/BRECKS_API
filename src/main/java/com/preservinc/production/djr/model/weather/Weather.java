@@ -1,8 +1,11 @@
 package com.preservinc.production.djr.model.weather;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Getter
 public abstract class Weather {
@@ -22,6 +25,7 @@ public abstract class Weather {
         this.timestamp = Instant.ofEpochSecond(timestamp).atZone(ZoneId.of("America/New_York")).toLocalDateTime();
     }
 
+    @JsonProperty("summary")
     @Override
     public String toString() {
         return String.format("L %d H %d %s", Math.round(minTemp.doubleValue()), Math.round(maxTemp.doubleValue()), description);
