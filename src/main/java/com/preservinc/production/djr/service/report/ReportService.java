@@ -38,6 +38,9 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BiFunction;
 
 @Service
 public class ReportService implements IReportService {
@@ -91,26 +94,33 @@ public class ReportService implements IReportService {
             report.setPM(job.team().getProjectManager());
             reportsDAO.saveReport(report);
 
-            File reportPDF = null;
-
-            try {
-                reportPDF = generateReportPDF(report, job.address());
-                emailService.sendReportEmail(reportingUser, job, report.getReportDate(), reportPDF);
-            } catch (SQLException | RuntimeException | IOException e) {
-                logger.error("[Report Service] Error generating PDF: {}", e.getMessage());
-                logger.error(ExceptionUtils.getStackTrace(e));
-                try { emailService.sendReportSubmissionNotification(report, job); }
-                catch (Exception ignored) {}
-            } catch (MessagingException e) {
-                logger.error("[Report Service] An error occurred delivering the message: {}", e.getMessage());
-                logger.error(ExceptionUtils.getStackTrace(e));
-                try { emailService.sendReportSubmissionNotification(report, job); }
-                catch (Exception ignored) {}
-            } finally {
-                try {
-                    if (reportPDF != null) reportPDF.delete();
-                } catch (Exception e) {
-                    reportPDF.deleteOnExit();
+            String reportEmailProperty = this.env.getProperty("platform.reports.send-email");
+            if (reportEmailProperty != null) {
+                if (reportEmailProperty.equalsIgnoreCase("pdf")) {
+                    File reportPDF = null;
+                    try {
+                        reportPDF = generateReportPDF(report, job.address());
+                        emailService.sendReportEmail(reportingUser, job, report.getReportDate(), reportPDF);
+                    } catch (SQLException | RuntimeException | IOException e) {
+                        logger.error("[Report Service] Error generating PDF: {}", e.getMessage());
+                        logger.error(ExceptionUtils.getStackTrace(e));
+                        try { emailService.sendReportSubmissionNotification(report, job); }
+                        catch (Exception ignored) {}
+                    } catch (MessagingException e) {
+                        logger.error("[Report Service] An error occurred delivering the message: {}", e.getMessage());
+                        logger.error(ExceptionUtils.getStackTrace(e));
+                        try { emailService.sendReportSubmissionNotification(report, job); }
+                        catch (Exception ignored) {}
+                    } finally {
+                        try {
+                            if (reportPDF != null) reportPDF.delete();
+                        } catch (Exception e) {
+                            reportPDF.deleteOnExit();
+                        }
+                    }
+                } else if (reportEmailProperty.equalsIgnoreCase("true") || reportEmailProperty.equalsIgnoreCase("notification")) {
+                    try { emailService.sendReportSubmissionNotification(report, job); }
+                    catch (Exception ignored) {}
                 }
             }
         } catch (SQLException e) {
@@ -123,10 +133,9 @@ public class ReportService implements IReportService {
         if (report.getJobID() == 0) throw new InvalidJobSiteException();
         if (report.getReportDate() == null || report.getReportDate().isAfter(LocalDate.now(ZoneId.of("America/New_York"))))
             throw new InvalidReportDateException();
-        if (report.getWorkArea1() == null || report.getWorkArea1().isBlank())
-            throw new InvalidWorkAreaException();
-        if (report.getSubs() == null || report.getSubs().isBlank())
-            throw new InvalidSubcontractorException();
+        if (report.getWorkDescriptions() == null || report.getWorkDescriptions().isEmpty())
+            throw new InvalidWorkDescriptionException();
+        if (report.getCrew().values().stream().anyMatch(Objects::isNull)) throw new InvalidCrewException();
     }
 
     private void checkWeather(Report report) {
@@ -156,8 +165,7 @@ public class ReportService implements IReportService {
         Path tempFilePath = Files.createTempFile("report", ".pdf");
 
         logger.info("[Report Service] Retrieving PDF template...");
-        S3Object reportPDFTemplateObject = spaces.getObject(env.getProperty("spaces.name"),
-                "templates/DJR%s.pdf".formatted(report.isOnsite() ? "" : "-R"));
+        S3Object reportPDFTemplateObject = spaces.getObject(env.getProperty("spaces.name"), "templates/DJR.pdf");
         S3ObjectInputStream reportPDFTemplateObjectInputStream = reportPDFTemplateObject.getObjectContent();
         Files.copy(reportPDFTemplateObjectInputStream, tempFilePath, StandardCopyOption.REPLACE_EXISTING);
 
@@ -167,15 +175,20 @@ public class ReportService implements IReportService {
         try (PDDocument reportPDDocument = Loader.loadPDF(reportTemplate)) {
             catalog = reportPDDocument.getDocumentCatalog();
 
+            BiFunction<List<String>, Integer, List<String>> condense = (descriptions, numFields) -> {
+                if (numFields >= descriptions.size()) return descriptions;
+                int numPerGroup = descriptions.size() % 5; // todo figurre this algorithm out
+            }
+
             PDAcroForm form = catalog.getAcroForm();
             form.getField("Project Address").setValue(address);
             form.getField("PMPS").setValue("%s / %s".formatted(report.getPM(), report.getPS()));
             form.getField("Date").setValue(report.getReportDate().format(DateTimeFormatter.ofPattern("MM/dd/yyyy")));
             form.getField("Person Filing Report").setValue(report.getReportBy().displayName());
             form.getField("Weather").setValue(report.getWeather());
-            form.getField("Workers Onsite").setValue(String.valueOf(report.getCrewSize()));
+            form.getField("Workers Onsite").setValue(String.valueOf(report.getCrew().values().stream().reduce(0, Integer::sum)));
             form.getField("Visitors").setValue(report.getVisitors());
-            form.getField("Work1").setValue(report.getWorkArea1());
+            form.getField("Work1").setValue(report.getWorkDescriptions());
             form.getField("Work2").setValue(report.getWorkArea2());
             form.getField("Work3").setValue(report.getWorkArea3());
             form.getField("Work4").setValue(report.getWorkArea4());

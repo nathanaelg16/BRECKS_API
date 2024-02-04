@@ -35,3 +35,5 @@ public class ReportsController {
         }
     }
 }
+
+// todo fix report submission to reflect new data mappings from client, as well as contractor fields
