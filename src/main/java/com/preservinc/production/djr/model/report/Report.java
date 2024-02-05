@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.bson.types.ObjectId;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.Map;
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class Report {
+    private ObjectId id;
     private int jobID;
     private LocalDate reportDate;
     private String weather;
@@ -24,8 +26,6 @@ public final class Report {
     private List<String> workDescriptions;
     private List<String> materials;
     private Employee reportBy;
-    private Employee PM;
-    private Employee PS;
 
     @Override
     public boolean equals(Object o) {
@@ -35,17 +35,18 @@ public final class Report {
 
         Report report = (Report) o;
 
-        return new EqualsBuilder().append(jobID, report.jobID).append(reportDate, report.reportDate).append(weather, report.weather).append(crew, report.crew).append(visitors, report.visitors).append(workDescriptions, report.workDescriptions).append(materials, report.materials).append(reportBy, report.reportBy).append(PM, report.PM).append(PS, report.PS).isEquals();
+        return new EqualsBuilder().append(jobID, report.jobID).append(id, report.id).append(reportDate, report.reportDate).append(weather, report.weather).append(crew, report.crew).append(visitors, report.visitors).append(workDescriptions, report.workDescriptions).append(materials, report.materials).append(reportBy, report.reportBy).isEquals();
     }
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(jobID).append(reportDate).append(weather).append(crew).append(visitors).append(workDescriptions).append(materials).append(reportBy).append(PM).append(PS).toHashCode();
+        return new HashCodeBuilder(17, 37).append(id).append(jobID).append(reportDate).append(weather).append(crew).append(visitors).append(workDescriptions).append(materials).append(reportBy).toHashCode();
     }
 
     @Override
     public String toString() {
         return new ToStringBuilder(this)
+                .append("id", id)
                 .append("jobID", jobID)
                 .append("reportDate", reportDate)
                 .append("weather", weather)
@@ -54,8 +55,6 @@ public final class Report {
                 .append("workDescriptions", workDescriptions)
                 .append("materials", materials)
                 .append("reportBy", reportBy)
-                .append("PM", PM)
-                .append("PS", PS)
                 .toString();
     }
 }

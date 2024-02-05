@@ -3,6 +3,7 @@ package com.preservinc.production.djr.service.report;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.mongodb.client.result.InsertOneResult;
 import com.preservinc.production.djr.auth.jwt.AuthorizationToken;
 import com.preservinc.production.djr.dao.employees.IEmployeeDAO;
 import com.preservinc.production.djr.dao.jobs.IJobsDAO;
@@ -38,8 +39,10 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 
 @Service
@@ -87,42 +90,46 @@ public class ReportService implements IReportService {
             Employee reportingUser = employeesDAO.findEmployeeByID(tokenUserID);
             TeamMemberRole reportingUserRole = job.team().getTeamMembers().get(reportingUser);
 
-            if (reportingUserRole == TeamMemberRole.PROJECT_SUPERVISOR) report.setPS(reportingUser);
-            else report.setPS(job.team().findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0));
+            Employee PS, PM = job.team().getProjectManager();
+
+            if (reportingUserRole == TeamMemberRole.PROJECT_SUPERVISOR) PS = reportingUser;
+            else PS = job.team().findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0);
 
             report.setReportBy(reportingUser);
-            report.setPM(job.team().getProjectManager());
-            reportsDAO.saveReport(report);
-
-            String reportEmailProperty = this.env.getProperty("platform.reports.send-email");
-            if (reportEmailProperty != null) {
-                if (reportEmailProperty.equalsIgnoreCase("pdf")) {
-                    File reportPDF = null;
-                    try {
-                        reportPDF = generateReportPDF(report, job.address());
-                        emailService.sendReportEmail(reportingUser, job, report.getReportDate(), reportPDF);
-                    } catch (SQLException | RuntimeException | IOException e) {
-                        logger.error("[Report Service] Error generating PDF: {}", e.getMessage());
-                        logger.error(ExceptionUtils.getStackTrace(e));
-                        try { emailService.sendReportSubmissionNotification(report, job); }
-                        catch (Exception ignored) {}
-                    } catch (MessagingException e) {
-                        logger.error("[Report Service] An error occurred delivering the message: {}", e.getMessage());
-                        logger.error(ExceptionUtils.getStackTrace(e));
-                        try { emailService.sendReportSubmissionNotification(report, job); }
-                        catch (Exception ignored) {}
-                    } finally {
-                        try {
-                            if (reportPDF != null) reportPDF.delete();
-                        } catch (Exception e) {
-                            reportPDF.deleteOnExit();
+            CompletableFuture<InsertOneResult> result = reportsDAO.saveReport(report);
+            result.whenCompleteAsync((v, t) -> {
+                if (t == null && v.wasAcknowledged()) {
+                    String reportEmailProperty = this.env.getProperty("platform.reports.send-email");
+                    if (reportEmailProperty != null) {
+                        if (reportEmailProperty.equalsIgnoreCase("pdf")) {
+                            File reportPDF = null;
+                            try {
+                                reportPDF = generateReportPDF(report, job.address(), PM, PS);
+                                emailService.sendReportEmail(reportingUser, job, report.getReportDate(), reportPDF);
+                            } catch (SQLException | RuntimeException | IOException e) {
+                                logger.error("[Report Service] Error generating PDF: {}", e.getMessage());
+                                logger.error(ExceptionUtils.getStackTrace(e));
+                                try { emailService.sendReportSubmissionNotification(report, job); }
+                                catch (Exception ignored) {}
+                            } catch (MessagingException e) {
+                                logger.error("[Report Service] An error occurred delivering the message: {}", e.getMessage());
+                                logger.error(ExceptionUtils.getStackTrace(e));
+                                try { emailService.sendReportSubmissionNotification(report, job); }
+                                catch (Exception ignored) {}
+                            } finally {
+                                try {
+                                    if (reportPDF != null) reportPDF.delete();
+                                } catch (Exception e) {
+                                    reportPDF.deleteOnExit();
+                                }
+                            }
+                        } else if (reportEmailProperty.equalsIgnoreCase("true") || reportEmailProperty.equalsIgnoreCase("notification")) {
+                            try { emailService.sendReportSubmissionNotification(report, job); }
+                            catch (Exception ignored) {}
                         }
                     }
-                } else if (reportEmailProperty.equalsIgnoreCase("true") || reportEmailProperty.equalsIgnoreCase("notification")) {
-                    try { emailService.sendReportSubmissionNotification(report, job); }
-                    catch (Exception ignored) {}
                 }
-            }
+            });
         } catch (SQLException e) {
             throw new ServerException(e);
         }
@@ -133,9 +140,15 @@ public class ReportService implements IReportService {
         if (report.getJobID() == 0) throw new InvalidJobSiteException();
         if (report.getReportDate() == null || report.getReportDate().isAfter(LocalDate.now(ZoneId.of("America/New_York"))))
             throw new InvalidReportDateException();
+        CompletableFuture<Boolean> alreadyReported = this.reportsDAO.checkReportExists(report.getJobID(), report.getReportDate());
         if (report.getWorkDescriptions() == null || report.getWorkDescriptions().isEmpty())
             throw new InvalidWorkDescriptionException();
         if (report.getCrew().values().stream().anyMatch(Objects::isNull)) throw new InvalidCrewException();
+        try {
+            if (alreadyReported.get()) throw new DuplicateReportException();
+        } catch (Exception e) {
+            throw new ServerException(e);
+        }
     }
 
     private void checkWeather(Report report) {
@@ -155,7 +168,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private File generateReportPDF(Report report, String address) throws IOException {
+    private File generateReportPDF(Report report, String address, Employee PM, Employee PS) throws IOException {
         // todo store template files locally and compare hashes before downloading from S3
 
         logger.info("[Report Service] Generating PDF...");
@@ -182,7 +195,7 @@ public class ReportService implements IReportService {
 
             PDAcroForm form = catalog.getAcroForm();
             form.getField("Project Address").setValue(address);
-            form.getField("PMPS").setValue("%s / %s".formatted(report.getPM(), report.getPS()));
+            form.getField("PMPS").setValue("%s / %s".formatted(PM, PS));
             form.getField("Date").setValue(report.getReportDate().format(DateTimeFormatter.ofPattern("MM/dd/yyyy")));
             form.getField("Person Filing Report").setValue(report.getReportBy().displayName());
             form.getField("Weather").setValue(report.getWeather());
