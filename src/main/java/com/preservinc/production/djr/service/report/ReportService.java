@@ -190,8 +190,21 @@ public class ReportService implements IReportService {
 
             BiFunction<List<String>, Integer, List<String>> condense = (descriptions, numFields) -> {
                 if (numFields >= descriptions.size()) return descriptions;
-                int numPerGroup = descriptions.size() % 5; // todo figurre this algorithm out
-            }
+                int numPerGroup = descriptions.size() / numFields;
+                int remainder = descriptions.size() % numFields;
+                List<String> condensed = new ArrayList<>(numFields);
+                int j = 0;
+                for (int i = 0; i < numFields; i++) {
+                    int total = numPerGroup;
+                    if (i < remainder) total++;
+                    condensed.add(String.join("; ", descriptions.subList(j, total)));
+                    j += total;
+                }
+                return condensed;
+            };
+
+            List<String> condensedWorkDescriptions = condense.apply(report.getWorkDescriptions(), 5);
+            List<String> condensedMaterials = condense.apply(report.getMaterials(), 4);
 
             PDAcroForm form = catalog.getAcroForm();
             form.getField("Project Address").setValue(address);
@@ -201,16 +214,20 @@ public class ReportService implements IReportService {
             form.getField("Weather").setValue(report.getWeather());
             form.getField("Workers Onsite").setValue(String.valueOf(report.getCrew().values().stream().reduce(0, Integer::sum)));
             form.getField("Visitors").setValue(report.getVisitors());
-            form.getField("Work1").setValue(report.getWorkDescriptions());
-            form.getField("Work2").setValue(report.getWorkArea2());
-            form.getField("Work3").setValue(report.getWorkArea3());
-            form.getField("Work4").setValue(report.getWorkArea4());
-            form.getField("Work5").setValue(report.getWorkArea5());
-            form.getField("Materials1").setValue(report.getMaterials1());
-            form.getField("Materials2").setValue(report.getMaterials2());
-            form.getField("Materials3").setValue(report.getMaterials3());
-            form.getField("Materials4").setValue(report.getMaterials4());
-            form.getField("Subs").setValue(report.getSubs());
+            form.getField("Work1").setValue(condensedWorkDescriptions.get(0));
+            form.getField("Work2").setValue(condensedWorkDescriptions.get(1));
+            form.getField("Work3").setValue(condensedWorkDescriptions.get(2));
+            form.getField("Work4").setValue(condensedWorkDescriptions.get(3));
+            form.getField("Work5").setValue(condensedWorkDescriptions.get(4));
+            form.getField("Materials1").setValue(condensedMaterials.get(0));
+            form.getField("Materials2").setValue(condensedMaterials.get(1));
+            form.getField("Materials3").setValue(condensedMaterials.get(2));
+            form.getField("Materials4").setValue(condensedMaterials.get(3));
+            form.getField("Subs").setValue(report.getCrew().keySet()
+                    .stream()
+                    .filter((key) -> !key.equalsIgnoreCase("preserv"))
+                    .reduce("", (iden, val) -> String.join(" ", iden, val))
+                    .strip());
             form.flatten();
 
             reportPDDocument.save(reportPDFPath.toFile());
