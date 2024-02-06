@@ -1,5 +1,11 @@
 package com.preservinc.production.djr.dao.jobs;
 
+import com.mongodb.client.model.Accumulators;
+import com.mongodb.client.model.Aggregates;
+import com.mongodb.client.model.BsonField;
+import com.mongodb.client.model.Filters;
+import com.mongodb.reactivestreams.client.MongoCollection;
+import com.mongodb.reactivestreams.client.MongoDatabase;
 import com.preservinc.production.djr.dao.teams.ITeamsDAO;
 import com.preservinc.production.djr.exception.DatabaseException;
 import com.preservinc.production.djr.model.employee.Employee;
@@ -9,9 +15,17 @@ import com.preservinc.production.djr.model.job.JobStatus;
 import com.preservinc.production.djr.model.job.JobStatusHistory;
 import com.preservinc.production.djr.model.team.Team;
 import com.preservinc.production.djr.model.time.Interval;
+import com.preservinc.production.djr.reactive.Subscriber;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
+import org.bson.Document;
+import org.bson.conversions.Bson;
+import org.reactivestreams.Subscription;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -23,6 +37,8 @@ import java.time.LocalDate;
 import java.time.Period;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -30,12 +46,15 @@ import java.util.stream.IntStream;
 @Repository
 public class JobsDAO implements IJobsDAO {
     private static final Logger logger = LogManager.getLogger();
+    private static final Marker marker = MarkerManager.getMarker("[Jobs DAO]");
     private final DataSource dataSource;
+    private final MongoDatabase mongoDB;
     private final ITeamsDAO teamsDAO;
 
     @Autowired
-    public JobsDAO(DataSource dataSource, ITeamsDAO teamsDAO) {
+    public JobsDAO(DataSource dataSource, MongoDatabase mongoDB, ITeamsDAO teamsDAO) {
         this.dataSource = dataSource;
+        this.mongoDB = mongoDB;
         this.teamsDAO = teamsDAO;
     }
 
@@ -183,27 +202,74 @@ public class JobsDAO implements IJobsDAO {
     public JobStats getStats(int id, LocalDate startDate, LocalDate endDate, boolean countSaturdays, boolean countSundays) throws SQLException {
         logger.info("[Jobs DAO] Retrieving stats for job id `{}` with start date `{}` and end date `{}`", id, startDate, endDate);
 
-        String date_filter_clause;
-        if (startDate == null && endDate == null) date_filter_clause = "";
-        else if (startDate != null && endDate != null) date_filter_clause = " and reportDate between ? and ?";
-        else throw new RuntimeException("Start Date and End Date must be both null or neither null");
+        if (!Boolean.logicalOr(Boolean.logicalAnd(startDate == null, endDate == null), Boolean.logicalAnd(startDate != null, endDate != null)))
+            throw new RuntimeException("Start Date and End Date must be both null or neither null");
+
+        @Getter
+        @AllArgsConstructor
+        class AggregateInformation {
+            private final Integer totalManDays;
+            private final Double avgManPower;
+            private final Set<LocalDate> reportDates;
+        }
+
+        class AggregateSubscriber extends Subscriber<AggregateInformation, Document> {
+            private static final Logger logger = LogManager.getLogger();
+            private static final Marker marker = MarkerManager.getMarker("[Aggregate Subscriber]");
+
+            public AggregateSubscriber(CompletableFuture<AggregateInformation> future) {
+                super(future);
+            }
+
+            @Override
+            public void onSubscribe(Subscription s) {
+                logger.debug(marker,"New subscription request received.");
+                s.request(1);
+            }
+
+            @Override
+            public void onNext(Document document) {
+                logger.traceEntry("{} onNext(Document={})", marker.getName(), document);
+                super.future.complete(new AggregateInformation(document.getInteger("totalManDays"),
+                        document.getDouble("avgManPower"), new HashSet<>(document.getList("reportDates", LocalDate.class))));
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                logger.traceEntry("{} onError(Throwable={})", marker.getName(), t);
+                super.future.completeExceptionally(t);
+            }
+
+            @Override
+            public void onComplete() {
+                logger.traceEntry("{} onComplete()", marker.getName());
+                super.future.complete(new AggregateInformation(0, 0.0, new HashSet<>()));
+            }
+        }
+
+        List<BsonField> accumulators = new ArrayList<>(3);
+        accumulators.add(Accumulators.sum("totalManDays", "$crewSize"));
+        accumulators.add(Accumulators.avg("avgManPower", "$crewSize"));
+        accumulators.add(Accumulators.addToSet("reportDates", "$reportDate"));
+
+        Bson jobIDFilter = Filters.eq("jobID", id);
+        Bson matchFilters = startDate == null ? jobIDFilter : Filters.and(jobIDFilter, Filters.gte("reportDate", startDate), Filters.lte("reportDate", endDate));
+
+        List<Bson> stages = new ArrayList<>(2);
+        stages.add(Aggregates.match(matchFilters));
+        stages.add(Aggregates.group(null, accumulators));
+
+        CompletableFuture<AggregateInformation> future = new CompletableFuture<>();
+        MongoCollection<Document> collection = this.mongoDB.getCollection("reports");
+        collection.aggregate(stages).subscribe(new AggregateSubscriber(future));
+
+        logger.debug(marker,"Job ID {}: Request sent to Mongo.", id);
 
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p1 = c.prepareStatement(("select sum(R.crewSize) as total_man_power, avg(R.crewSize) " +
-                     "as avg_man_power from Reports R inner join Jobs J on R.job_id = J.id where J.id = ?%s;").formatted(date_filter_clause));
-             PreparedStatement p2 = c.prepareStatement(("select reportDate from Reports " +
-                     "where job_id = ?%s order by reportDate;").formatted(date_filter_clause));
              CallableStatement c1 = c.prepareCall("call get_job_statuses_on_date_range(?, ?, ?);")
         ) {
-            p1.setInt(1, id);
-            p2.setInt(1, id);
 
-            if (startDate != null) {
-                p1.setDate(2, Date.valueOf(startDate));
-                p2.setDate(2, Date.valueOf(startDate));
-                p1.setDate(3, Date.valueOf(endDate));
-                p2.setDate(3, Date.valueOf(endDate));
-            } else {
+            if (startDate == null) {
                 try (PreparedStatement p3 = c.prepareStatement("select job_start_date(?) as start_date, " +
                         "job_last_active_date(?) as last_active_date;")) {
                     p3.setInt(1, id);
@@ -227,40 +293,42 @@ public class JobsDAO implements IJobsDAO {
             c1.setDate(2, Date.valueOf(startDate));
             c1.setDate(3, Date.valueOf(endDate));
 
-            try (ResultSet r1 = p1.executeQuery(); ResultSet r2 = p2.executeQuery(); ResultSet rc1 = c1.executeQuery()) {
-                int totalManDays;
-                double avgDailyManPower;
+            try (ResultSet rc1 = c1.executeQuery()) {
+                JobStatusHistory.Builder jobStatusHistoryBuilder = new JobStatusHistory.Builder();
 
-                if (r1.next()) {
-                    totalManDays = r1.getInt("total_man_power");
-                    avgDailyManPower = r1.getDouble("avg_man_power");
+                while (rc1.next()) jobStatusHistoryBuilder = jobStatusHistoryBuilder
+                        .addInterval(JobStatus.of(rc1.getString("status")),
+                                Interval.between(rc1.getDate("valid_start").toLocalDate(),
+                                        rc1.getDate("valid_end").toLocalDate()));
 
-                    Set<LocalDate> reportDates = new HashSet<>();
-                    while (r2.next()) reportDates.add(r2.getDate(1).toLocalDate());
+                AggregateInformation aggregateInformation = future.get();
 
-                    JobStatusHistory.Builder jobStatusHistoryBuilder = new JobStatusHistory.Builder();
-                    while (rc1.next()) jobStatusHistoryBuilder = jobStatusHistoryBuilder
-                            .addInterval(JobStatus.of(rc1.getString("status")),
-                                    Interval.between(rc1.getDate("valid_start").toLocalDate(),
-                                            rc1.getDate("valid_end").toLocalDate()));
+                logger.debug(marker, "Got aggregate information for job id {}\nInformation: {}", id, aggregateInformation);
 
-                    List<LocalDate> missingReportDates = calculateMissingDates(startDate, endDate, reportDates, jobStatusHistoryBuilder.build(), countSaturdays, countSundays);
+                JobStats stats = new JobStats(aggregateInformation.getTotalManDays(),
+                        aggregateInformation.getAvgManPower(),
+                        calculateMissingDates(startDate, endDate, aggregateInformation.getReportDates(),
+                                jobStatusHistoryBuilder.build(), countSaturdays, countSundays));
 
-                    return new JobStats(totalManDays, avgDailyManPower, missingReportDates);
-                }
+                logger.info("[Jobs DAO] Stats for Job #{}: \n{}", id, stats);
+                return stats;
             }
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error("[Jobs DAO] An error occurred getting aggregate info from MongoDB...");
+            logger.error(e);
         }
 
         throw new DatabaseException();
     }
 
-    private List<LocalDate> calculateMissingDates(@NonNull LocalDate startDate,
+    private static List<LocalDate> calculateMissingDates(@NonNull LocalDate startDate,
                                                   @NonNull LocalDate endDate,
                                                   @NonNull Set<LocalDate> dates,
                                                   @NonNull JobStatusHistory jobStatusHistory,
                                                   boolean countSaturdays, boolean countSundays) {
         // todo implement filtering of company holidays
-        Period period = Period.between(startDate, endDate);
+        logger.traceEntry("{} calculateMissingDates(startDate={}, endDate={}, dates={}, jobStatusHistory={}, countSaturdays={}. countSundays={})", marker.getName(), startDate, endDate, dates, jobStatusHistory, countSaturdays, countSundays);
+        Period period = Period.between(startDate, endDate.plusDays(1));
         List<Interval> activeIntervals = jobStatusHistory.getActiveIntervals();
         List<Interval> completedIntervals = jobStatusHistory.getCompletedIntervals();
         Predicate<LocalDate> saturdayFilter = countSaturdays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SATURDAY;

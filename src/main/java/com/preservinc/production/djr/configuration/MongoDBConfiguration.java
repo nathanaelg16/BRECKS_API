@@ -5,14 +5,23 @@ import com.mongodb.MongoClientSettings;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import com.mongodb.reactivestreams.client.MongoDatabase;
+import io.jsonwebtoken.lang.Collections;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bson.codecs.configuration.CodecProvider;
+import org.bson.codecs.configuration.CodecRegistry;
+import org.bson.codecs.pojo.PojoCodecProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 import javax.annotation.PostConstruct;
+
+import static com.mongodb.MongoClientSettings.getDefaultCodecRegistry;
+import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
+import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
+import static org.bson.codecs.pojo.Conventions.ANNOTATION_CONVENTION;
 
 @Configuration
 public class MongoDBConfiguration {
@@ -46,6 +55,10 @@ public class MongoDBConfiguration {
 
     @Bean
     public MongoDatabase getDatabase() {
-        return this.client.getDatabase(this.environment.getRequiredProperty("additional-datasources.mongo-1.database"));
+        CodecProvider codecProvider = PojoCodecProvider.builder().automatic(true).conventions(Collections.of(ANNOTATION_CONVENTION)).build();
+        CodecRegistry codecRegistry = fromRegistries(getDefaultCodecRegistry(), fromProviders(codecProvider));
+        return this.client
+                .getDatabase(this.environment.getRequiredProperty("additional-datasources.mongo-1.database"))
+                .withCodecRegistry(codecRegistry);
     }
 }

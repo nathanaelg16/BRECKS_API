@@ -1,5 +1,6 @@
 package com.preservinc.production.djr.service;
 
+import com.mongodb.client.result.InsertOneResult;
 import com.preservinc.production.djr.auth.accesskey.AccessKeyManager;
 import com.preservinc.production.djr.dao.reports.IReportsDAO;
 import com.preservinc.production.djr.model.employee.Employee;
@@ -10,6 +11,7 @@ import com.preservinc.production.djr.model.report.Report;
 import com.preservinc.production.djr.model.team.Team;
 import com.preservinc.production.djr.service.email.EmailService;
 import jakarta.mail.Session;
+import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
@@ -28,6 +30,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
@@ -49,8 +52,14 @@ public class EmailServiceTest {
     static class ReportsDAOMock implements IReportsDAO {
 
         @Override
-        public void saveReport(Report report) throws SQLException {
+        public CompletableFuture<InsertOneResult> saveReport(Report report) {
             logger.info("Saving report {}", report);
+            return null;
+        }
+
+        @Override
+        public CompletableFuture<Boolean> checkReportExists(int jobID, @NonNull LocalDate reportDate) {
+            return null;
         }
 
         @Override

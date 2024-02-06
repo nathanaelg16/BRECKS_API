@@ -1,5 +1,6 @@
 package com.preservinc.production.djr.dao;
 
+import com.mongodb.reactivestreams.client.MongoDatabase;
 import com.preservinc.production.djr.dao.jobs.JobsDAO;
 import com.preservinc.production.djr.dao.teams.ITeamsDAO;
 import com.preservinc.production.djr.model.employee.Employee;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class JobsDAOTest {
 
     private final DataSource dataSource;
+    private final MongoDatabase mongoDatabase;
     private final ITeamsDAO teamsDAO;
     private JobsDAO jobsDAO;
 
@@ -37,14 +39,15 @@ public class JobsDAOTest {
     }
 
     @Autowired
-    public JobsDAOTest(DataSource dataSource) {
+    public JobsDAOTest(DataSource dataSource, MongoDatabase database) {
         this.dataSource = dataSource;
+        this.mongoDatabase = database;
         this.teamsDAO = new TeamsDAOMock();
     }
 
     @BeforeEach
     void setUp() {
-        this.jobsDAO = new JobsDAO(dataSource, teamsDAO);
+        this.jobsDAO = new JobsDAO(dataSource, mongoDatabase, teamsDAO);
     }
 
     @Test

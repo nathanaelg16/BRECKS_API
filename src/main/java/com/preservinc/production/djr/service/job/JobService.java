@@ -116,12 +116,12 @@ public class JobService implements IJobService {
 
         // todo implement getStats for range of dates
 
-        LocalDate startDate, endDate;
+        LocalDate startDate, endDate, currentDate = LocalDate.now(ZoneId.of("America/New_York"));
 
         if (value == null) {
             switch (basis) {
                 case "ytd" -> {
-                    endDate = LocalDate.now(ZoneId.of("America/New_York"));
+                    endDate = currentDate;
                     startDate = endDate.withDayOfYear(1);
                 }
                 case "lifetime" -> {
@@ -129,7 +129,7 @@ public class JobService implements IJobService {
                     endDate = null;
                 }
                 case "week" -> {
-                    startDate = LocalDate.now(ZoneId.of("America/New_York")).with(ChronoField.DAY_OF_WEEK, DayOfWeek.MONDAY.getValue());
+                    startDate = currentDate.with(ChronoField.DAY_OF_WEEK, DayOfWeek.MONDAY.getValue());
                     endDate = startDate.plusDays(4);
                 }
                 default -> throw new BadRequestException();
@@ -158,6 +158,8 @@ public class JobService implements IJobService {
                 throw new BadRequestException();
             }
         }
+
+        if (endDate != null && endDate.isAfter(currentDate)) endDate = currentDate;
 
         try {
             return this.jobsDAO.getStats(id, startDate, endDate, false, false);

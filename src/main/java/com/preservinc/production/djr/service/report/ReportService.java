@@ -39,7 +39,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -188,23 +187,23 @@ public class ReportService implements IReportService {
         try (PDDocument reportPDDocument = Loader.loadPDF(reportTemplate)) {
             catalog = reportPDDocument.getDocumentCatalog();
 
-            BiFunction<List<String>, Integer, List<String>> condense = (descriptions, numFields) -> {
-                if (numFields >= descriptions.size()) return descriptions;
+            BiFunction<List<String>, Integer, String[]> condense = (descriptions, numFields) -> {
+                if (numFields >= descriptions.size()) return descriptions.toArray(new String[numFields]);
                 int numPerGroup = descriptions.size() / numFields;
                 int remainder = descriptions.size() % numFields;
-                List<String> condensed = new ArrayList<>(numFields);
+                String[] condensed = new String[numFields];
                 int j = 0;
                 for (int i = 0; i < numFields; i++) {
                     int total = numPerGroup;
                     if (i < remainder) total++;
-                    condensed.add(String.join("; ", descriptions.subList(j, total)));
+                    condensed[i] = (String.join("; ", descriptions.subList(j, total)));
                     j += total;
                 }
                 return condensed;
             };
 
-            List<String> condensedWorkDescriptions = condense.apply(report.getWorkDescriptions(), 5);
-            List<String> condensedMaterials = condense.apply(report.getMaterials(), 4);
+            String[] condensedWorkDescriptions = condense.apply(report.getWorkDescriptions(), 5);
+            String[] condensedMaterials = condense.apply(report.getMaterials(), 4);
 
             PDAcroForm form = catalog.getAcroForm();
             form.getField("Project Address").setValue(address);
@@ -214,15 +213,15 @@ public class ReportService implements IReportService {
             form.getField("Weather").setValue(report.getWeather());
             form.getField("Workers Onsite").setValue(String.valueOf(report.getCrew().values().stream().reduce(0, Integer::sum)));
             form.getField("Visitors").setValue(report.getVisitors());
-            form.getField("Work1").setValue(condensedWorkDescriptions.get(0));
-            form.getField("Work2").setValue(condensedWorkDescriptions.get(1));
-            form.getField("Work3").setValue(condensedWorkDescriptions.get(2));
-            form.getField("Work4").setValue(condensedWorkDescriptions.get(3));
-            form.getField("Work5").setValue(condensedWorkDescriptions.get(4));
-            form.getField("Materials1").setValue(condensedMaterials.get(0));
-            form.getField("Materials2").setValue(condensedMaterials.get(1));
-            form.getField("Materials3").setValue(condensedMaterials.get(2));
-            form.getField("Materials4").setValue(condensedMaterials.get(3));
+            form.getField("Work1").setValue(condensedWorkDescriptions[0]);
+            form.getField("Work2").setValue(condensedWorkDescriptions[1]);
+            form.getField("Work3").setValue(condensedWorkDescriptions[2]);
+            form.getField("Work4").setValue(condensedWorkDescriptions[3]);
+            form.getField("Work5").setValue(condensedWorkDescriptions[4]);
+            form.getField("Materials1").setValue(condensedMaterials[0]);
+            form.getField("Materials2").setValue(condensedMaterials[1]);
+            form.getField("Materials3").setValue(condensedMaterials[2]);
+            form.getField("Materials4").setValue(condensedMaterials[3]);
             form.getField("Subs").setValue(report.getCrew().keySet()
                     .stream()
                     .filter((key) -> !key.equalsIgnoreCase("preserv"))

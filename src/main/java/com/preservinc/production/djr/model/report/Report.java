@@ -7,6 +7,7 @@ import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 
 import java.time.LocalDate;
@@ -26,6 +27,11 @@ public final class Report {
     private List<String> workDescriptions;
     private List<String> materials;
     private Employee reportBy;
+
+    @BsonProperty("crewSize")
+    public int getCrewSize() {
+        return this.crew.values().stream().reduce(0, Integer::sum);
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -51,6 +57,7 @@ public final class Report {
                 .append("reportDate", reportDate)
                 .append("weather", weather)
                 .append("crew", crew)
+                .append("crewSize", crew.values().stream().reduce(0, Integer::sum))
                 .append("visitors", visitors)
                 .append("workDescriptions", workDescriptions)
                 .append("materials", materials)
