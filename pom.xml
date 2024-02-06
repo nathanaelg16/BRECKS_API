@@ -8,11 +8,11 @@
         <version>3.2.2</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <groupId>com.preservinc.production.djr</groupId>
-    <artifactId>DailyJobReportsAPI</artifactId>
+    <groupId>app.brecks</groupId>
+    <artifactId>BRECKS-API</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>DailyJobReports_Spring</name>
-    <description>DailyJobReports_Spring</description>
+    <name>BRECKS-API</name>
+    <description>BRECKS API</description>
     <properties>
         <java.version>17</java.version>
         <kotlin.version>1.9.22</kotlin.version>
