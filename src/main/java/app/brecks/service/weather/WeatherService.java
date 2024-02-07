@@ -1,13 +1,13 @@
 package app.brecks.service.weather;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import app.brecks.exception.WeatherAPIException;
 import app.brecks.model.weather.CurrentWeather;
 import app.brecks.model.weather.HistoricWeather;
 import app.brecks.model.weather.Weather;
 import app.brecks.service.email.IEmailService;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,7 +86,7 @@ public class WeatherService implements IWeatherService {
 
             List<String> descriptions = new ArrayList<>();
             weatherData.get("weather").elements().forEachRemaining(node -> descriptions.add(node.get("description").asText()));
-            weather.setDescription(String.join(",", descriptions));
+            weather.setDescription(String.join(", ", descriptions).strip());
             weather.setTimestamp(weatherData.get("dt").asLong());
         } catch (RuntimeException | ExecutionException e) {
             if (e.getCause() instanceof WeatherAPIException || e.getCause() instanceof JsonProcessingException) {
@@ -182,7 +182,7 @@ public class WeatherService implements IWeatherService {
     }
 
     private CompletableFuture<Object> sendAsyncRequest(HttpRequest request, Function<String, ?> responseHandler) {
-        CompletableFuture<Object> response = new CompletableFuture<Object>().orTimeout(25, TimeUnit.SECONDS);
+        CompletableFuture<Object> response = new CompletableFuture<>().orTimeout(25, TimeUnit.SECONDS);
 
         if (checkRateLimit()) {
             response.completeExceptionally(new WeatherAPIException(WeatherAPIException.ExceptionType.RATE_LIMIT_EXCEEDED));
