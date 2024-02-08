@@ -19,6 +19,7 @@ public class StatusChangeRequest implements Request {
     @Override
     public boolean isWellFormed() {
         if (status == null) return false;
+        if (startDate == null) return false;
 
         try {
             JobStatus.of(status);
