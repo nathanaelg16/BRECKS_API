@@ -2,14 +2,15 @@ package app.brecks.request.job;
 
 import app.brecks.model.job.JobStatus;
 import app.brecks.request.Request;
-import lombok.Setter;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+import lombok.Data;
 
-@Setter
+import java.time.LocalDate;
+
+@Data
 public class StatusChangeRequest implements Request {
     private String status;
+    private LocalDate startDate;
+    private LocalDate endDate;
 
     public JobStatus getStatus() {
         return  JobStatus.of(status);
@@ -26,28 +27,5 @@ public class StatusChangeRequest implements Request {
         }
 
         return true;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-
-        if (o == null || getClass() != o.getClass()) return false;
-
-        StatusChangeRequest that = (StatusChangeRequest) o;
-
-        return new EqualsBuilder().append(status, that.status).isEquals();
-    }
-
-    @Override
-    public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(status).toHashCode();
-    }
-
-    @Override
-    public String toString() {
-        return new ToStringBuilder(this)
-                .append("status", status)
-                .toString();
     }
 }
