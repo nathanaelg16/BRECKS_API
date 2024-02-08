@@ -1,12 +1,12 @@
 package app.brecks.dao.reports;
 
+import app.brecks.model.report.Report;
+import app.brecks.reactive.CountSubscriber;
+import app.brecks.reactive.InsertOneResultSubscriber;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.reactivestreams.client.MongoCollection;
 import com.mongodb.reactivestreams.client.MongoDatabase;
-import app.brecks.model.report.Report;
-import app.brecks.reactive.CountSubscriber;
-import app.brecks.reactive.InsertOneResultSubscriber;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -60,7 +60,8 @@ public class ReportsDAO implements IReportsDAO {
         collection.countDocuments(Filters.and(Filters.eq("jobID", jobID), Filters.eq("reportDate", reportDate)))
                 .subscribe(new CountSubscriber(count));
         count.whenCompleteAsync((v, t) -> {
-            if (t == null) result.complete(v != 0);
+            if (t == null && v != null) result.complete(v != 0);
+            else if (v == null) result.complete(null);
             else result.completeExceptionally(t);
         });
 

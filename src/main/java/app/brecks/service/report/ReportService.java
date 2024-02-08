@@ -1,13 +1,11 @@
 package app.brecks.service.report;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.S3Object;
-import com.amazonaws.services.s3.model.S3ObjectInputStream;
-import com.mongodb.client.result.InsertOneResult;
 import app.brecks.auth.jwt.AuthorizationToken;
 import app.brecks.dao.employees.IEmployeeDAO;
 import app.brecks.dao.jobs.IJobsDAO;
 import app.brecks.dao.reports.IReportsDAO;
+import app.brecks.exception.BadRequestException;
+import app.brecks.exception.DatabaseException;
 import app.brecks.exception.ServerException;
 import app.brecks.exception.report.*;
 import app.brecks.model.employee.Employee;
@@ -17,6 +15,10 @@ import app.brecks.model.team.TeamMemberRole;
 import app.brecks.model.weather.Weather;
 import app.brecks.service.email.IEmailService;
 import app.brecks.service.weather.IWeatherService;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.S3Object;
+import com.amazonaws.services.s3.model.S3ObjectInputStream;
+import com.mongodb.client.result.InsertOneResult;
 import io.jsonwebtoken.JwtParser;
 import jakarta.mail.MessagingException;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -42,6 +44,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 
 @Service
@@ -69,6 +72,20 @@ public class ReportService implements IReportService {
         this.employeesDAO = employeesDAO;
         this.spaces = spaces;
         this.jwtParser = jwtParser;
+    }
+
+    @Override
+    public boolean checkExists(Integer job, LocalDate date) {
+        if (job == null || date == null || job <= 0 || date.isAfter(LocalDate.now(ZoneId.of("America/New_York"))))
+            throw new BadRequestException();
+
+        try {
+            Boolean result = this.reportsDAO.checkReportExists(job, date).get();
+            if (result == null) throw new DatabaseException();
+            else return result;
+        } catch (InterruptedException | ExecutionException e) {
+            throw new ServerException(e);
+        }
     }
 
     @Override
