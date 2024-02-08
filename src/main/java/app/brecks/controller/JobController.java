@@ -47,7 +47,7 @@ public class JobController {
     public ResponseEntity<Object> changeStatus(@PathVariable Integer id, @RequestBody StatusChangeRequest request) {
         logger.info("[Job Controller] Received change status request for JOB ID {}: Change to {}", id, request);
         if (!request.isWellFormed()) return ResponseEntity.badRequest().build();
-        if (this.jobService.changeJobStatus(Objects.requireNonNull(id), request.getStatus())) return ResponseEntity.ok().build();
+        if (this.jobService.changeJobStatus(Objects.requireNonNull(id), request)) return ResponseEntity.ok().build();
         else return ResponseEntity.badRequest().build();
     }
 
