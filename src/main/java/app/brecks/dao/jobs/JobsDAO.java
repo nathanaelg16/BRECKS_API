@@ -138,7 +138,7 @@ public class JobsDAO implements IJobsDAO {
     }
 
     @Override
-    public void updateJobStatus(Integer id, JobStatus status, LocalDate startDate, LocalDate endDate) throws SQLException {
+    public void updateJobStatus(@NonNull Integer id, @NonNull JobStatus status, @NonNull LocalDate startDate, LocalDate endDate) throws SQLException {
         logger.info("[JobsDAO] Updating job status...");
         try (Connection c = this.dataSource.getConnection();
              PreparedStatement p = c.prepareStatement("call set_job_status(?, ?, ?, ?);")
@@ -146,7 +146,10 @@ public class JobsDAO implements IJobsDAO {
             p.setInt(1, id);
             p.setString(2, status.getStatus());
             p.setDate(3, Date.valueOf(startDate));
-            p.setDate(4, Date.valueOf(endDate));
+
+            if (endDate == null) p.setNull(4, Types.DATE);
+            else p.setDate(4, Date.valueOf(endDate));
+
             p.executeUpdate();
         }
     }
