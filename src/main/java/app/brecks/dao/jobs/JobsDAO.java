@@ -342,7 +342,7 @@ public class JobsDAO implements IJobsDAO {
                 .filter(sundayFilter)
                 .filter((date) -> !dates.contains(date))
                 .filter((date) -> activeIntervals.stream().parallel().anyMatch((interval) -> interval.contains(date))
-                        || completedIntervals.stream().parallel().anyMatch((interval) -> interval.contains(date)))
+                        || completedIntervals.stream().parallel().anyMatch((interval) -> interval.getStartDate().equals(date)))
                 .toList();
     }
 }
