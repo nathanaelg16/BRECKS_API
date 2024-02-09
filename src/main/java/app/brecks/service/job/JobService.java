@@ -163,6 +163,7 @@ public class JobService implements IJobService {
             }
         }
 
+        if (startDate != null && startDate.isAfter(currentDate)) throw new BadRequestException();
         if (endDate != null && endDate.isAfter(currentDate)) endDate = currentDate;
 
         try {

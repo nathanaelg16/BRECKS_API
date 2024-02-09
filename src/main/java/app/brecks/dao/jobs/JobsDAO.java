@@ -20,6 +20,7 @@ import com.mongodb.reactivestreams.client.MongoDatabase;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
@@ -208,7 +209,12 @@ public class JobsDAO implements IJobsDAO {
         logger.info("[Jobs DAO] Retrieving stats for job id `{}` with start date `{}` and end date `{}`", id, startDate, endDate);
 
         if (!Boolean.logicalOr(Boolean.logicalAnd(startDate == null, endDate == null), Boolean.logicalAnd(startDate != null, endDate != null)))
-            throw new RuntimeException("Start Date and End Date must be both null or neither null");
+            throw new IllegalArgumentException("Start Date and End Date must be both null or neither null");
+
+        LocalDate currentDate = LocalDate.now(ZoneId.of("America/New_York"));
+
+        if (startDate != null && (startDate.isAfter(currentDate) || endDate.isAfter(currentDate)))
+            throw new IllegalArgumentException("Dates must not be in the future.");
 
         @Getter
         @AllArgsConstructor
@@ -345,6 +351,23 @@ public class JobsDAO implements IJobsDAO {
                 .filter((date) -> activeIntervals.stream().parallel().anyMatch((interval) -> interval.contains(date))
                         || completedIntervals.stream().parallel().anyMatch((interval) -> interval.getStartDate().equals(date)))
                 .toList();
+    }
+
+    private static int calculateTotalActiveDays(JobStatusHistory jobStatusHistory, List<LocalDate> exceptions, boolean countSaturdays, boolean countSundays) {
+        throw new NotImplementedException(); // todo finish implementation
+//        Predicate<LocalDate> saturdayFilter = countSaturdays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SATURDAY;
+//        Predicate<LocalDate> sundayFilter = countSundays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SUNDAY;
+//
+//        return jobStatusHistory.getActiveIntervals()
+//                .parallelStream()
+//                .reduce(0, (identity, interval) -> {
+//                    Period period = Period.between(interval.getStartDate(), interval.getEndDate().plusDays(1));
+//                    return Math.addExact(identity, IntStream.range(0, period.getDays())
+//                            .parallel()
+//                            .mapToObj((i) -> interval.getStartDate().plusDays(i))
+//                            .filter()
+//                    );
+//                });
     }
 }
 
