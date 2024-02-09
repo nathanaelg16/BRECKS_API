@@ -1,15 +1,16 @@
 package app.brecks.service;
 
-import com.mongodb.client.result.InsertOneResult;
 import app.brecks.auth.accesskey.AccessKeyManager;
 import app.brecks.dao.reports.IReportsDAO;
-import app.brecks.model.employee.Employee;
 import app.brecks.model.employee.EmployeeStatus;
 import app.brecks.model.job.Job;
 import app.brecks.model.job.JobStatus;
 import app.brecks.model.report.Report;
 import app.brecks.model.team.Team;
+import app.brecks.model.team.TeamMember;
+import app.brecks.model.team.TeamMemberRole;
 import app.brecks.service.email.EmailService;
+import com.mongodb.client.result.InsertOneResult;
 import jakarta.mail.Session;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
@@ -84,11 +85,11 @@ public class EmailServiceTest {
 
     @Test
     void testNotifyReportSubmission() {
-        Employee employee = new Employee(1, "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false, EmployeeStatus.ACTIVE);
-        Team team = new Team(1, employee);
+        TeamMember teamMember = new TeamMember(1, "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false, EmployeeStatus.ACTIVE, TeamMemberRole.PROJECT_SUPERVISOR);
+        Team team = new Team(1, teamMember);
 
         Report report = new Report();
-        report.setReportBy(employee);
+        report.setReportBy(teamMember);
         report.setReportDate(LocalDate.now(ZoneId.of("America/New_York")));
 
         assertDoesNotThrow(() -> emailService.sendReportSubmissionNotification(report, new Job(1, null, "123 Main St", null, null, JobStatus.ACTIVE, team)));
@@ -96,13 +97,13 @@ public class EmailServiceTest {
 
     @Test
     void testSendReportSubmission() throws URISyntaxException {
-        Employee employee = new Employee(1, "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false, EmployeeStatus.ACTIVE);
+        TeamMember teamMember = new TeamMember(1, "Robert", "Downey Jr.", "Bob", "PM", "nathanaelg16@gmail.com", false, EmployeeStatus.ACTIVE, TeamMemberRole.PROJECT_SUPERVISOR);
 
-        Team team = new Team(1, employee);
+        Team team = new Team(1, teamMember);
 
         File report = new File(Objects.requireNonNull(getClass().getClassLoader().getResource("sampleReport.pdf")).toURI());
 
-        assertDoesNotThrow(() -> emailService.sendReportEmail(employee, new Job(1, null, "123 Main St", null, null, JobStatus.ACTIVE, team), LocalDate.now(), report));
+        assertDoesNotThrow(() -> emailService.sendReportEmail(teamMember, new Job(1, null, "123 Main St", null, null, JobStatus.ACTIVE, team), LocalDate.now(), report));
     }
 
     @AfterEach

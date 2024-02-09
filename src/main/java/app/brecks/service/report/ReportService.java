@@ -11,6 +11,7 @@ import app.brecks.exception.report.*;
 import app.brecks.model.employee.Employee;
 import app.brecks.model.job.Job;
 import app.brecks.model.report.Report;
+import app.brecks.model.team.TeamMember;
 import app.brecks.model.team.TeamMemberRole;
 import app.brecks.model.weather.Weather;
 import app.brecks.service.email.IEmailService;
@@ -103,13 +104,14 @@ public class ReportService implements IReportService {
 
             logger.info("[Report Service] Team PM: {}", job.team().getProjectManager().fullName());
 
-            Employee reportingUser = employeesDAO.findEmployeeByID(tokenUserID);
-            TeamMemberRole reportingUserRole = job.team().getTeamMembers().get(reportingUser);
+            TeamMember tmReportingUser = job.team().findTeamMemberByID(tokenUserID);
 
-            Employee PS, PM = job.team().getProjectManager();
+            TeamMember PS, PM = job.team().getProjectManager();
 
-            if (reportingUserRole == TeamMemberRole.PROJECT_SUPERVISOR) PS = reportingUser;
+            if (tmReportingUser != null && tmReportingUser.teamRole() == TeamMemberRole.PROJECT_SUPERVISOR) PS = tmReportingUser;
             else PS = job.team().findTeamMembersByRole(TeamMemberRole.PROJECT_SUPERVISOR).get(0);
+
+            Employee reportingUser = tmReportingUser == null ? employeesDAO.findEmployeeByID(tokenUserID) : tmReportingUser;
 
             report.setReportBy(reportingUser);
             CompletableFuture<InsertOneResult> result = reportsDAO.saveReport(report);

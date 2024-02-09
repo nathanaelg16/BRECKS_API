@@ -1,12 +1,13 @@
 package app.brecks.dao;
 
-import com.mongodb.reactivestreams.client.MongoDatabase;
 import app.brecks.dao.jobs.JobsDAO;
 import app.brecks.dao.teams.ITeamsDAO;
-import app.brecks.model.employee.Employee;
 import app.brecks.model.job.Job;
 import app.brecks.model.job.JobStatus;
 import app.brecks.model.team.Team;
+import app.brecks.model.team.TeamMember;
+import app.brecks.model.team.TeamMemberRole;
+import com.mongodb.reactivestreams.client.MongoDatabase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +34,8 @@ public class JobsDAOTest {
     static class TeamsDAOMock implements ITeamsDAO {
         @Override
         public Team getTeam(int teamID, boolean includeJobs) {
-            return new Team(1, new Employee(2, null, null, null,
-                    null, null, null, null));
+            return new Team(1, new TeamMember(2, null, null, null,
+                    null, null, null, null, TeamMemberRole.PROJECT_MANAGER));
         }
     }
 

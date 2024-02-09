@@ -1,8 +1,8 @@
 package app.brecks.dao.teams;
 
-import app.brecks.model.employee.Employee;
 import app.brecks.model.employee.EmployeeStatus;
 import app.brecks.model.team.Team;
+import app.brecks.model.team.TeamMember;
 import app.brecks.model.team.TeamMemberRole;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,8 +14,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
 @Repository
 public class TeamsDAO implements ITeamsDAO {
@@ -32,7 +32,7 @@ public class TeamsDAO implements ITeamsDAO {
         // todo add jobs to the team
         logger.info("[JobsDAO] Getting team with team ID {}", teamID);
         Team team = null;
-        Map<Employee, TeamMemberRole> teamMembers = new HashMap<>();
+        List<TeamMember> teamMembers = new ArrayList<>();
         try (Connection c = dataSource.getConnection();
              PreparedStatement p1 = c.prepareStatement("WITH team_pm AS (SELECT T.pm FROM Teams T WHERE T.id = ?) " +
                      "SELECT E.id, E.first_name, E.last_name, E.display_name, " +
@@ -46,18 +46,18 @@ public class TeamsDAO implements ITeamsDAO {
             p1.setInt(2, teamID);
             try (ResultSet r1 = p1.executeQuery()) {
                 while (r1.next()) {
-                    Employee employee = new Employee(r1.getInt("id"),
+                    TeamMember teamMember = new TeamMember(r1.getInt("id"),
                             r1.getString("first_name"),
                             r1.getString("last_name"),
                             r1.getString("display_name"),
                             r1.getString("employee_role"),
                             r1.getString("email"),
                             r1.getBoolean("admin"),
-                            EmployeeStatus.valueOf(r1.getString("status"))
+                            EmployeeStatus.valueOf(r1.getString("status")),
+                            TeamMemberRole.of(r1.getString("team_member_role"))
                     );
-                    TeamMemberRole role = TeamMemberRole.of(r1.getString("team_member_role"));
-                    if (r1.getBoolean("is_pm")) team = new Team(teamID, employee);
-                    teamMembers.put(employee, role);
+                    if (r1.getBoolean("is_pm")) team = new Team(teamID, teamMember);
+                    teamMembers.add(teamMember);
                 }
             }
         }

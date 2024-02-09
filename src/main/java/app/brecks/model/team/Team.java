@@ -1,42 +1,39 @@
 package app.brecks.model.team;
 
-import app.brecks.model.employee.Employee;
 import app.brecks.model.job.Job;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @Getter
 @Setter
 public class Team {
     private final int teamID;
-    private final Employee projectManager;
-    private Map<Employee, TeamMemberRole> teamMembers;
+    private final TeamMember projectManager;
+
+    @JsonIgnore
+    private List<TeamMember> teamMembers;
+
+    @JsonIgnore
     private List<Job> assignedJobs;
 
-    public Team(int teamID, Employee projectManager) {
+    public Team(int teamID, TeamMember projectManager) {
         this.teamID = teamID;
         this.projectManager = projectManager;
     }
 
-    public Pair<Employee, TeamMemberRole> findTeamMemberByID(int id) {
-        return teamMembers.keySet()
-                .parallelStream()
-                .filter(employee -> employee.id() == id)
+    public TeamMember findTeamMemberByID(int id) {
+        return teamMembers.parallelStream()
+                .filter(tm -> tm.id() == id)
                 .findFirst()
-                .map(employee -> Pair.of(employee, teamMembers.get(employee)))
                 .orElse(null);
     }
 
-    public List<Employee> findTeamMembersByRole(TeamMemberRole role) {
-        return teamMembers.entrySet()
-                .parallelStream()
-                .filter(entry -> entry.getValue().equals(role))
-                .map(HashMap.Entry::getKey)
+    public List<TeamMember> findTeamMembersByRole(TeamMemberRole role) {
+        return teamMembers.parallelStream()
+                .filter(tm -> tm.teamRole().equals(role))
                 .toList();
     }
 }

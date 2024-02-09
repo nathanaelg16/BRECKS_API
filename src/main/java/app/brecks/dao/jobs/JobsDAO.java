@@ -2,12 +2,13 @@ package app.brecks.dao.jobs;
 
 import app.brecks.dao.teams.ITeamsDAO;
 import app.brecks.exception.DatabaseException;
-import app.brecks.model.employee.Employee;
 import app.brecks.model.job.Job;
 import app.brecks.model.job.JobStats;
 import app.brecks.model.job.JobStatus;
 import app.brecks.model.job.JobStatusHistory;
 import app.brecks.model.team.Team;
+import app.brecks.model.team.TeamMember;
+import app.brecks.model.team.TeamMemberRole;
 import app.brecks.model.time.Interval;
 import app.brecks.reactive.Subscriber;
 import com.mongodb.client.model.Accumulators;
@@ -190,8 +191,8 @@ public class JobsDAO implements IJobsDAO {
                             rEndDate.map(Date::toLocalDate).orElse(null),
                             JobStatus.of(r.getString("status")),
                             new Team(r.getInt("team_id"),
-                                    new Employee(r.getInt("pm"), null, null, null,
-                                            null, null, null, null)
+                                    new TeamMember(r.getInt("pm"), null, null, null,
+                                            null, null, null, null, TeamMemberRole.PROJECT_MANAGER)
                             )
                     ));
                 }
