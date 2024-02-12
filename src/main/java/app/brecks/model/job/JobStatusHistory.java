@@ -1,16 +1,18 @@
 package app.brecks.model.job;
 
+import app.brecks.model.time.Interval;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import app.brecks.model.time.Interval;
+import lombok.ToString;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@ToString
 public class JobStatusHistory {
-    private Map<JobStatus, List<Interval>> statusHistory;
+    private final Map<JobStatus, List<Interval>> statusHistory;
 
     private JobStatusHistory() {
         this.statusHistory = new HashMap<>();
@@ -29,22 +31,22 @@ public class JobStatusHistory {
         return this.statusHistory.get(status);
     }
 
-    @JsonProperty("active")
+    @JsonProperty("ACTIVE")
     public List<Interval> getActiveIntervals() {
         return this.statusHistory.get(JobStatus.ACTIVE);
     }
 
-    @JsonProperty("on_hold")
+    @JsonProperty("ON_HOLD")
     public List<Interval> getOnHoldIntervals() {
         return this.statusHistory.get(JobStatus.ON_HOLD);
     }
 
-    @JsonProperty("completed")
+    @JsonProperty("COMPLETED")
     public List<Interval> getCompletedIntervals() {
         return this.statusHistory.get(JobStatus.COMPLETED);
     }
 
-    @JsonProperty("not_started")
+    @JsonProperty("NOT_STARTED")
     public List<Interval> getNotStartedIntervals() {
         return this.statusHistory.get(JobStatus.NOT_STARTED);
     }

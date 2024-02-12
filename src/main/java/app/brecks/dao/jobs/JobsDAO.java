@@ -312,12 +312,15 @@ public class JobsDAO implements IJobsDAO {
                                 Interval.between(rc1.getDate("valid_start").toLocalDate(),
                                         rc1.getDate("valid_end").toLocalDate()));
 
+                JobStatusHistory statusHistory = jobStatusHistoryBuilder.build();
+
                 AggregateInformation aggregateInformation = future.get();
 
                 JobStats stats = new JobStats(aggregateInformation.getTotalManDays(),
                         aggregateInformation.getAvgManPower(),
                         calculateMissingDates(startDate, endDate, aggregateInformation.getReportDates(),
-                                jobStatusHistoryBuilder.build(), countSaturdays, countSundays));
+                                statusHistory, countSaturdays, countSundays),
+                        statusHistory);
 
                 logger.info("[Jobs DAO] Stats for Job #{}: \n{}", id, stats);
                 return stats;
