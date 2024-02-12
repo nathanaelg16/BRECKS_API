@@ -36,15 +36,15 @@ import java.sql.Date;
 import java.sql.*;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.Period;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 @Repository
 public class JobsDAO implements IJobsDAO {
@@ -340,12 +340,11 @@ public class JobsDAO implements IJobsDAO {
                                                   boolean countSaturdays, boolean countSundays) {
         // todo implement filtering of company holidays
         logger.traceEntry("{} calculateMissingDates(startDate={}, endDate={}, dates={}, jobStatusHistory={}, countSaturdays={}. countSundays={})", marker.getName(), startDate, endDate, dates, jobStatusHistory, countSaturdays, countSundays);
-        Period period = Period.between(startDate, endDate.plusDays(1));
         List<Interval> activeIntervals = jobStatusHistory.getActiveIntervals();
         List<Interval> completedIntervals = jobStatusHistory.getCompletedIntervals();
         Predicate<LocalDate> saturdayFilter = countSaturdays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SATURDAY;
         Predicate<LocalDate> sundayFilter = countSundays ? (date) -> true : (date) -> date.getDayOfWeek() != DayOfWeek.SUNDAY;
-        return IntStream.range(0, period.getDays())
+        return LongStream.range(0, ChronoUnit.DAYS.between(startDate, endDate.plusDays(1)))
                 .parallel()
                 .mapToObj(startDate::plusDays)
                 .filter(saturdayFilter)
