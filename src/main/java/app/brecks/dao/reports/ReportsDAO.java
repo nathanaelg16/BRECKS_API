@@ -1,15 +1,18 @@
 package app.brecks.dao.reports;
 
+import app.brecks.exception.DatabaseException;
 import app.brecks.model.report.Report;
 import app.brecks.reactive.CountSubscriber;
+import app.brecks.reactive.Finder;
 import app.brecks.reactive.InsertOneResultSubscriber;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.result.InsertOneResult;
 import com.mongodb.reactivestreams.client.MongoCollection;
 import com.mongodb.reactivestreams.client.MongoDatabase;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -22,10 +25,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+import static com.mongodb.client.model.Filters.*;
 
 @Repository
 public class ReportsDAO implements IReportsDAO {
     private static final Logger logger = LogManager.getLogger();
+    private static final Marker marker = MarkerManager.getMarker("[Reports DAO]");
     private final DataSource dataSource;
     private final MongoDatabase mongoDB;
 
@@ -57,7 +64,7 @@ public class ReportsDAO implements IReportsDAO {
         MongoCollection<Report> collection = this.mongoDB.getCollection("reports", Report.class);
         CompletableFuture<Long> count = new CompletableFuture<>();
         CompletableFuture<Boolean> result = new CompletableFuture<>();
-        collection.countDocuments(Filters.and(Filters.eq("jobID", jobID), Filters.eq("reportDate", reportDate)))
+        collection.countDocuments(and(eq("jobID", jobID), eq("reportDate", reportDate)))
                 .subscribe(new CountSubscriber(count));
         count.whenCompleteAsync((v, t) -> {
             if (t == null && v != null) result.complete(v != 0);
@@ -82,6 +89,26 @@ public class ReportsDAO implements IReportsDAO {
             List<String> emails = new ArrayList<>();
             while (r.next()) emails.add(r.getString("email"));
             return emails;
+        }
+    }
+
+    @Override
+    public List<Report> getReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
+        logger.traceEntry("{} getReports(job={}, startDate={}, endDate={})", marker, startDate, endDate);
+        CompletableFuture<List<Report>> completableFuture = new CompletableFuture<>();
+        this.mongoDB.getCollection("reports")
+                .find(and(
+                                eq("jobID", job),
+                                gte("reportDate", startDate),
+                                lte("reportDate", endDate)
+                        ), Report.class
+                ).subscribe(new Finder<>(completableFuture));
+        try {
+            return completableFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error(marker, "Exception occurred retrieving reports from database.");
+            logger.error(e);
+            throw new DatabaseException();
         }
     }
 }

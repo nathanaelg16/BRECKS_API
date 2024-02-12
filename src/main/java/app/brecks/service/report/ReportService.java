@@ -22,9 +22,12 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.mongodb.client.result.InsertOneResult;
 import io.jsonwebtoken.JwtParser;
 import jakarta.mail.MessagingException;
+import lombok.NonNull;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
@@ -51,6 +54,7 @@ import java.util.function.BiFunction;
 @Service
 public class ReportService implements IReportService {
     private static final Logger logger = LogManager.getLogger();
+    private static final Marker marker = MarkerManager.getMarker("[Report Service]");
 
     private final Environment env;
     private final IWeatherService weatherService;
@@ -151,6 +155,21 @@ public class ReportService implements IReportService {
         } catch (SQLException e) {
             throw new ServerException(e);
         }
+    }
+
+    @Override
+    public List<Report> getReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
+        logger.traceEntry("{} getReports(job={}, startDate={}, endDate={}", marker, job, startDate, endDate);
+
+        if (job == 0) throw new BadRequestException();
+
+        if (startDate.isAfter(endDate)) {
+            LocalDate temp = startDate;
+            startDate = endDate;
+            endDate = temp;
+        }
+
+        return this.reportsDAO.getReports(job, startDate, endDate);
     }
 
     private void validateReport(Report report) {
