@@ -3,6 +3,8 @@ package app.brecks.model.employee;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.bson.codecs.pojo.annotations.BsonCreator;
+import org.bson.codecs.pojo.annotations.BsonProperty;
 
 public class Employee {
     private final int id;
@@ -14,7 +16,8 @@ public class Employee {
     private final Boolean isAdmin;
     private final EmployeeStatus status;
 
-    public Employee(int id, String firstName, String lastName, String displayName, String role, String email, Boolean isAdmin, EmployeeStatus status) {
+    @BsonCreator
+    public Employee(@BsonProperty("id") int id, @BsonProperty("firstName") String firstName, @BsonProperty("lastName") String lastName, @BsonProperty("displayName") String displayName, @BsonProperty("role") String role, @BsonProperty("email") String email, @BsonProperty("isAdmin") Boolean isAdmin, @BsonProperty("status") EmployeeStatus status) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;

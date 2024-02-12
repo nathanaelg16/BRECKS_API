@@ -69,6 +69,11 @@ public class EmailServiceTest {
             emails.add("ngutierrez@preservinc.com");
             return emails;
         }
+
+        @Override
+        public List<Report> getReports(Integer job, LocalDate startDate, LocalDate endDate) {
+            return null;
+        }
     }
 
     @BeforeEach
