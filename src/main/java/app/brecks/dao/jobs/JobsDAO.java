@@ -153,6 +153,7 @@ public class JobsDAO implements IJobsDAO {
             else p.setDate(4, Date.valueOf(endDate));
 
             p.executeUpdate();
+            logger.info(marker, "Job status update complete.");
         }
     }
 

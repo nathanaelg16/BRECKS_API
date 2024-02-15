@@ -45,6 +45,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -169,7 +170,10 @@ public class ReportService implements IReportService {
             endDate = temp;
         }
 
-        return this.reportsDAO.getReports(job, startDate, endDate);
+        List<Report> reports = this.reportsDAO.getReports(job, startDate, endDate);
+        reports.sort(Comparator.comparing(Report::getReportDate));
+
+        return reports;
     }
 
     private void validateReport(Report report) {
