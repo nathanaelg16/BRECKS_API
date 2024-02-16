@@ -56,7 +56,7 @@ public class EmailService implements IEmailService {
         MimeBodyPart body = new MimeBodyPart();
         String email = loadTemplate("templates/email/new_report_email.html", "templates/email/styles.css")
                 .replace("{{ADDRESS}}", job.address())
-                .replace("{{AUTHOR}}", author.displayName())
+                .replace("{{AUTHOR}}", author.getDisplayName())
                 .replace("{{DATE}}", reportDate.format(DateTimeFormatter.ofPattern("MM/dd/yyyy")))
                 .replace("{{JOB_ID}}", String.valueOf(job.id()))
                 .replace("{{WEB_APP_HOST}}", Objects.requireNonNull(env.getProperty("webapp.host")));
@@ -67,7 +67,7 @@ public class EmailService implements IEmailService {
 
         Envelope.Builder(this.session)
                 .subject(String.format("%s - Daily Job Report", job.address()))
-                .replyTo(author.email())
+                .replyTo(author.getEmail())
                 .sendTo(reportsDAO.getEmailsForReportAdmins().toArray(String[]::new))
                 .withPart(attachment)
                 .withPart(body)
@@ -83,7 +83,7 @@ public class EmailService implements IEmailService {
         MimeBodyPart body = new MimeBodyPart();
         String email = loadTemplate("templates/email/new_report_notification_email.html", "templates/email/styles.css")
                 .replace("{{ADDRESS}}", job.address())
-                .replace("{{AUTHOR}}", report.getReportBy().displayName())
+                .replace("{{AUTHOR}}", report.getReportBy().getDisplayName())
                 .replace("{{DATE}}", report.getReportDate().format(DateTimeFormatter.ofPattern("MM/dd/yyyy")))
                 .replace("{{JOB_ID}}", String.valueOf(job.id()))
                 .replace("{{REPORT_DATE_ID}}", report.getReportDate().format(DateTimeFormatter.ofPattern("yyMMdd")))
@@ -92,9 +92,9 @@ public class EmailService implements IEmailService {
 
         Envelope.Builder(this.session)
                 .subject(String.format("%s - Daily Job Report", job.address()))
-                .replyTo(report.getReportBy().email())
+                .replyTo(report.getReportBy().getEmail())
                 .sendTo(reportsDAO.getEmailsForReportAdmins().toArray(String[]::new))
-                .CC(report.getReportBy().email())
+                .CC(report.getReportBy().getEmail())
                 .withPart(body)
                 .send();
 

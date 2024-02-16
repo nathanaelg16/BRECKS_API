@@ -107,7 +107,7 @@ public class ReportService implements IReportService {
             if (job == null)
                 throw new InvalidJobSiteException();
 
-            logger.info("[Report Service] Team PM: {}", job.team().getProjectManager().fullName());
+            logger.info("[Report Service] Team PM: {}", job.team().getProjectManager().getFullName());
 
             TeamMember tmReportingUser = job.team().findTeamMemberByID(tokenUserID);
 
@@ -251,7 +251,7 @@ public class ReportService implements IReportService {
             form.getField("Project Address").setValue(address);
             form.getField("PMPS").setValue("%s / %s".formatted(PM, PS));
             form.getField("Date").setValue(report.getReportDate().format(DateTimeFormatter.ofPattern("MM/dd/yyyy")));
-            form.getField("Person Filing Report").setValue(report.getReportBy().displayName());
+            form.getField("Person Filing Report").setValue(report.getReportBy().getDisplayName());
             form.getField("Weather").setValue(report.getWeather());
             form.getField("Workers Onsite").setValue(String.valueOf(report.getCrew().values().stream().reduce(0, Integer::sum)));
             form.getField("Visitors").setValue(report.getVisitors());

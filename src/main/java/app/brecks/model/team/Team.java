@@ -26,7 +26,7 @@ public class Team {
 
     public TeamMember findTeamMemberByID(int id) {
         return teamMembers.parallelStream()
-                .filter(tm -> tm.id() == id)
+                .filter(tm -> tm.getID() == id)
                 .findFirst()
                 .orElse(null);
     }

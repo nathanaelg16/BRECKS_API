@@ -17,7 +17,7 @@ public class Employee {
     private final EmployeeStatus status;
 
     @BsonCreator
-    public Employee(@BsonProperty("id") int id, @BsonProperty("firstName") String firstName, @BsonProperty("lastName") String lastName, @BsonProperty("displayName") String displayName, @BsonProperty("role") String role, @BsonProperty("email") String email, @BsonProperty("isAdmin") Boolean isAdmin, @BsonProperty("status") EmployeeStatus status) {
+    public Employee(@BsonProperty("id") int id, @BsonProperty("firstName") String firstName, @BsonProperty("lastName") String lastName, @BsonProperty("displayName") String displayName, @BsonProperty("role") String role, @BsonProperty("email") String email, @BsonProperty("admin") Boolean isAdmin, @BsonProperty("status") EmployeeStatus status) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -29,37 +29,38 @@ public class Employee {
     }
 
     @JsonProperty
-    public String fullName() {
+    public String getFullName() {
         return "%s %s".formatted(this.firstName, this.lastName);
     }
 
+    @BsonProperty("id")
     @JsonProperty
-    public int id() {
+    public int getID() {
         return id;
     }
 
     @JsonProperty
-    public String firstName() {
+    public String getFirstName() {
         return firstName;
     }
 
     @JsonProperty
-    public String lastName() {
+    public String getLastName() {
         return lastName;
     }
 
     @JsonProperty
-    public String displayName() {
+    public String getDisplayName() {
         return displayName;
     }
 
     @JsonProperty
-    public String role() {
+    public String getRole() {
         return role;
     }
 
     @JsonProperty
-    public String email() {
+    public String getEmail() {
         return email;
     }
 
@@ -69,7 +70,7 @@ public class Employee {
     }
 
     @JsonProperty
-    public EmployeeStatus status() {
+    public EmployeeStatus getStatus() {
         return status;
     }
 

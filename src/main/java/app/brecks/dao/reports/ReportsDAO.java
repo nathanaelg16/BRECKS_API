@@ -45,7 +45,7 @@ public class ReportsDAO implements IReportsDAO {
     @Override
     public CompletableFuture<InsertOneResult> saveReport(Report report) {
         logger.info("[ReportsDAO] Saving report to database.\nJob ID: {}\tReport Date: {}\tBy: {} (ID# {})",
-                report.getJobID(), report.getReportDate(), report.getReportBy(), report.getReportBy().id());
+                report.getJobID(), report.getReportDate(), report.getReportBy(), report.getReportBy().getID());
 
         MongoCollection<Report> collection = this.mongoDB.getCollection("reports", Report.class);
         CompletableFuture<InsertOneResult> future = new CompletableFuture<>();

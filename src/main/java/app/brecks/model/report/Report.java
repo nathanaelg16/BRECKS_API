@@ -1,7 +1,7 @@
 package app.brecks.model.report;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import app.brecks.model.employee.Employee;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -24,8 +24,8 @@ public final class Report {
     private String weather;
     private Map<String, Integer> crew;
     private String visitors;
-    private List<String> workDescriptions;
-    private List<String> materials;
+    private List<String> workDescriptions = List.of();
+    private List<String> materials = List.of();
     private Employee reportBy;
 
     @BsonProperty("crewSize")
