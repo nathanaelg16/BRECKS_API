@@ -6,6 +6,7 @@ import app.brecks.model.employee.EmployeeStatus;
 import app.brecks.model.job.Job;
 import app.brecks.model.job.JobStatus;
 import app.brecks.model.report.Report;
+import app.brecks.model.report.SummarizedReport;
 import app.brecks.model.team.Team;
 import app.brecks.model.team.TeamMember;
 import app.brecks.model.team.TeamMemberRole;
@@ -72,6 +73,11 @@ public class EmailServiceTest {
 
         @Override
         public List<Report> getReports(Integer job, LocalDate startDate, LocalDate endDate) {
+            return null;
+        }
+
+        @Override
+        public List<SummarizedReport> getSummarizedReports(Integer job, LocalDate startDate, LocalDate endDate) {
             return null;
         }
     }

@@ -2,6 +2,7 @@ package app.brecks.dao.reports;
 
 import app.brecks.exception.DatabaseException;
 import app.brecks.model.report.Report;
+import app.brecks.model.report.SummarizedReport;
 import app.brecks.reactive.CountSubscriber;
 import app.brecks.reactive.Finder;
 import app.brecks.reactive.InsertOneResultSubscriber;
@@ -102,6 +103,26 @@ public class ReportsDAO implements IReportsDAO {
                                 gte("reportDate", startDate),
                                 lte("reportDate", endDate)
                         ), Report.class
+                ).subscribe(new Finder<>(completableFuture));
+        try {
+            return completableFuture.get();
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error(marker, "Exception occurred retrieving reports from database.");
+            logger.error(e);
+            throw new DatabaseException();
+        }
+    }
+
+    @Override
+    public List<SummarizedReport> getSummarizedReports(Integer job, LocalDate startDate, LocalDate endDate) {
+        logger.traceEntry("{} getReports(job={}, startDate={}, endDate={})", marker, startDate, endDate);
+        CompletableFuture<List<SummarizedReport>> completableFuture = new CompletableFuture<>();
+        this.mongoDB.getCollection("reports")
+                .find(and(
+                                eq("jobID", job),
+                                gte("reportDate", startDate),
+                                lte("reportDate", endDate)
+                        ), SummarizedReport.class
                 ).subscribe(new Finder<>(completableFuture));
         try {
             return completableFuture.get();

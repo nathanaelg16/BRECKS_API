@@ -11,6 +11,7 @@ import app.brecks.exception.report.*;
 import app.brecks.model.employee.Employee;
 import app.brecks.model.job.Job;
 import app.brecks.model.report.Report;
+import app.brecks.model.report.SummarizedReport;
 import app.brecks.model.team.TeamMember;
 import app.brecks.model.team.TeamMemberRole;
 import app.brecks.model.weather.Weather;
@@ -172,6 +173,24 @@ public class ReportService implements IReportService {
 
         List<Report> reports = this.reportsDAO.getReports(job, startDate, endDate);
         reports.sort(Comparator.comparing(Report::getReportDate));
+
+        return reports;
+    }
+
+    @Override
+    public List<SummarizedReport> getSummarizedReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
+        logger.traceEntry("{} getSummarizedReports(job={}, startDate={}, endDate={}", marker, job, startDate, endDate);
+
+        if (job == 0) throw new BadRequestException();
+
+        if (startDate.isAfter(endDate)) {
+            LocalDate temp = startDate;
+            startDate = endDate;
+            endDate = temp;
+        }
+
+        List<SummarizedReport> reports = this.reportsDAO.getSummarizedReports(job, startDate, endDate);
+        reports.sort(Comparator.comparing(SummarizedReport::getDate));
 
         return reports;
     }

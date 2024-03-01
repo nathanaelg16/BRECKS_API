@@ -2,6 +2,7 @@ package app.brecks.controller;
 
 import app.brecks.auth.jwt.AuthorizationToken;
 import app.brecks.model.report.Report;
+import app.brecks.model.report.SummarizedReport;
 import app.brecks.service.report.IReportService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,5 +53,11 @@ public class ReportsController {
     public ResponseEntity<List<Report>> getReports(@RequestParam("job") Integer job, @RequestParam("startDate") LocalDate startDate, @RequestParam("endDate") LocalDate endDate) {
         logger.traceEntry("{} getReports(job={}, startDate={}, endDate={})", marker, job, startDate, endDate);
         return ResponseEntity.ok(this.reportService.getReports(job, startDate, endDate));
+    }
+
+    @GetMapping("/summarized")
+    public ResponseEntity<List<SummarizedReport>> getSummarizedReports(@RequestParam("job") Integer job, @RequestParam("startDate") LocalDate startDate, @RequestParam("endDate") LocalDate endDate) {
+        logger.traceEntry("{} getSummarizedReports(job={}, startDate={}, endDate={})", marker, job, startDate, endDate);
+        return ResponseEntity.ok(this.reportService.getSummarizedReports(job, startDate, endDate));
     }
 }
