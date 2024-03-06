@@ -94,6 +94,23 @@ public class ReportsDAO implements IReportsDAO {
     }
 
     @Override
+    public Report getReport(ObjectId reportID) {
+        logger.traceEntry("{} getReport(reportID={})", marker, reportID);
+        CompletableFuture<List<Report>> completableFuture = new CompletableFuture<>();
+        this.mongoDB.getCollection("reports")
+                .find(eq("_id", reportID), Report.class)
+                .subscribe(new Finder<>(completableFuture));
+        try {
+            List<Report> results = completableFuture.get();
+            return results.isEmpty() ? null : results.get(0);
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error(marker, "Exception occurred retrieving reports from database.");
+            logger.error(e);
+            throw new DatabaseException();
+        }
+    }
+
+    @Override
     public List<Report> getReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
         logger.traceEntry("{} getReports(job={}, startDate={}, endDate={})", marker, startDate, endDate);
         CompletableFuture<List<Report>> completableFuture = new CompletableFuture<>();

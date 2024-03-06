@@ -1,6 +1,7 @@
 package app.brecks.controller;
 
 import app.brecks.auth.jwt.AuthorizationToken;
+import app.brecks.exception.BadRequestException;
 import app.brecks.model.report.Report;
 import app.brecks.model.report.SummarizedReport;
 import app.brecks.service.report.IReportService;
@@ -13,7 +14,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/reports")
@@ -50,9 +53,20 @@ public class ReportsController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Report>> getReports(@RequestParam("job") Integer job, @RequestParam("startDate") LocalDate startDate, @RequestParam("endDate") LocalDate endDate) {
-        logger.traceEntry("{} getReports(job={}, startDate={}, endDate={})", marker, job, startDate, endDate);
-        return ResponseEntity.ok(this.reportService.getReports(job, startDate, endDate));
+    public ResponseEntity<List<Report>> getReports(@RequestParam Map<String, String> params) {
+        logger.traceEntry("{} getReports(params={})", marker, params);
+        if (params.containsKey("id")) return ResponseEntity.ok(List.of(this.reportService.getReport(params.get("id"))));
+        else {
+            try {
+                Integer job = Integer.parseInt(params.get("job"));
+                LocalDate startDate = LocalDate.parse(params.get("startDate"));
+                LocalDate endDate = LocalDate.parse(params.get("endDate"));
+                return ResponseEntity.ok(this.reportService.getReports(job, startDate, endDate));
+            } catch (NumberFormatException | DateTimeParseException | NullPointerException e) {
+                logger.error("{} Could not parse params: {}", marker, params);
+                throw new BadRequestException();
+            }
+        }
     }
 
     @GetMapping("/summarized")

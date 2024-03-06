@@ -178,6 +178,17 @@ public class ReportService implements IReportService {
     }
 
     @Override
+    public Report getReport(@NonNull String reportID) {
+        logger.traceEntry("{} getReport(reportID={})", marker, reportID);
+        try {
+            return this.reportsDAO.getReport(new ObjectId(reportID));
+        } catch (IllegalArgumentException e) {
+            logger.error("{} Could not convert string `{}` to ObjectID", marker, reportID);
+            throw new BadRequestException();
+        }
+    }
+
+    @Override
     public List<SummarizedReport> getSummarizedReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
         logger.traceEntry("{} getSummarizedReports(job={}, startDate={}, endDate={}", marker, job, startDate, endDate);
 

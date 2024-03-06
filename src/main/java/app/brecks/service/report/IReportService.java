@@ -13,6 +13,8 @@ public interface IReportService {
 
     boolean checkExists(Integer job, LocalDate date);
 
+    Report getReport(@NonNull String reportID);
+
     List<Report> getReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate);
 
     List<SummarizedReport> getSummarizedReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate);
