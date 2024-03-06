@@ -1,12 +1,17 @@
 package app.brecks.model.report;
 
 import app.brecks.model.employee.Employee;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.bson.codecs.pojo.annotations.BsonId;
+import org.bson.codecs.pojo.annotations.BsonIgnore;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.bson.types.ObjectId;
 
@@ -17,7 +22,10 @@ import java.util.Map;
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonPropertyOrder({"id"})
 public final class Report {
+    @BsonId
+    @JsonIgnore
     private ObjectId id;
     private int jobID;
     private LocalDate reportDate;
@@ -27,6 +35,12 @@ public final class Report {
     private List<String> workDescriptions = List.of();
     private List<String> materials = List.of();
     private Employee reportBy;
+
+    @JsonProperty("id")
+    @BsonIgnore
+    public String objectId() {
+        return this.id.toString();
+    }
 
     @BsonProperty("crewSize")
     public int getCrewSize() {
