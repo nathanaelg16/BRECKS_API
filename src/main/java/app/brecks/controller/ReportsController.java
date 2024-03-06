@@ -69,6 +69,20 @@ public class ReportsController {
         }
     }
 
+    @PutMapping
+    public ResponseEntity<Object> putReport(@RequestAttribute("token") AuthorizationToken authorizationToken, @RequestBody Report report) {
+        logger.info(marker, "Received updated job report for job ID {} submitted by {}", report.getJobID(), authorizationToken);
+        try {
+            reportService.updateReport(authorizationToken, report);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            logger.error(e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     @GetMapping("/summarized")
     public ResponseEntity<List<SummarizedReport>> getSummarizedReports(@RequestParam("job") Integer job, @RequestParam("startDate") LocalDate startDate, @RequestParam("endDate") LocalDate endDate) {
         logger.traceEntry("{} getSummarizedReports(job={}, startDate={}, endDate={})", marker, job, startDate, endDate);

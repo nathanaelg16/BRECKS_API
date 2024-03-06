@@ -11,6 +11,8 @@ import java.util.List;
 public interface IReportService {
     void submitReport(AuthorizationToken token, Report report);
 
+    void updateReport(AuthorizationToken authorizationToken, Report report);
+
     boolean checkExists(Integer job, LocalDate date);
 
     Report getReport(@NonNull String reportID);

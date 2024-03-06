@@ -2,6 +2,7 @@ package app.brecks.dao.reports;
 
 import app.brecks.exception.DatabaseException;
 import app.brecks.model.report.Report;
+import app.brecks.model.report.ReportHistories;
 import app.brecks.model.report.SummarizedReport;
 import app.brecks.reactive.CountSubscriber;
 import app.brecks.reactive.Finder;
@@ -14,6 +15,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
+import org.bson.Document;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
@@ -58,6 +61,33 @@ public class ReportsDAO implements IReportsDAO {
         });
 
         return future;
+    }
+
+    @Override
+    public void updateReport(Report report) throws DatabaseException {
+        logger.info("[ReportsDAO] Saving updated report to database.\nJob ID: {}\tReport Date: {}\tBy: {} (ID# {})",
+                report.getJobID(), report.getReportDate(), report.getReportBy(), report.getReportBy().getID());
+
+        MongoCollection<Document> reports = this.mongoDB.getCollection("reports");
+        CompletableFuture<List<Document>> reportsFuture = new CompletableFuture<>();
+        reports.find(eq("_id", report.getId())).subscribe(new Finder<>(reportsFuture));
+
+        MongoCollection<ReportHistories> historicalReports = this.mongoDB.getCollection("historicalReports", ReportHistories.class);
+        CompletableFuture<List<ReportHistories>> historicalFuture = new CompletableFuture<>();
+        historicalReports.find(and(
+                eq("jobID", report.getJobID()),
+                gte("reportDate", report.getReportDate())
+        )).subscribe(new Finder<>(historicalFuture));
+
+        historicalFuture.whenComplete((documents, throwable) -> {
+            if (throwable != null) {
+                ObjectId historicalReportId;
+                if (documents.isEmpty()) {
+                    CompletableFuture<InsertOneResult> historicalReportFuture = new CompletableFuture<>();
+                    //historicalReports.insertOne();
+                }
+            }
+        });
     }
 
     public CompletableFuture<Boolean> checkReportExists(int jobID, @NonNull LocalDate reportDate) {

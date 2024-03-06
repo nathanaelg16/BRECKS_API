@@ -1,5 +1,6 @@
 package app.brecks.dao.reports;
 
+import app.brecks.exception.DatabaseException;
 import app.brecks.model.report.Report;
 import app.brecks.model.report.SummarizedReport;
 import com.mongodb.client.result.InsertOneResult;
@@ -18,4 +19,5 @@ public interface IReportsDAO {
     Report getReport(ObjectId objectId);
     List<Report> getReports(Integer job, LocalDate startDate, LocalDate endDate);
     List<SummarizedReport> getSummarizedReports(Integer job, LocalDate startDate, LocalDate endDate);
+    void updateReport(Report report) throws DatabaseException;
 }

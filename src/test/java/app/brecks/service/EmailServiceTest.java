@@ -2,6 +2,7 @@ package app.brecks.service;
 
 import app.brecks.auth.accesskey.AccessKeyManager;
 import app.brecks.dao.reports.IReportsDAO;
+import app.brecks.exception.DatabaseException;
 import app.brecks.model.employee.EmployeeStatus;
 import app.brecks.model.job.Job;
 import app.brecks.model.job.JobStatus;
@@ -57,6 +58,11 @@ public class EmailServiceTest {
         public CompletableFuture<InsertOneResult> saveReport(Report report) {
             logger.info("Saving report {}", report);
             return null;
+        }
+
+        @Override
+        public void updateReport(Report report) throws DatabaseException {
+            logger.info("Updating report {}", report);
         }
 
         @Override

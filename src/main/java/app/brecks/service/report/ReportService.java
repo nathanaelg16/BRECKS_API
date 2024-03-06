@@ -33,6 +33,7 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
 import org.apache.pdfbox.pdmodel.interactive.form.PDAcroForm;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -49,7 +50,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 
@@ -99,7 +102,7 @@ public class ReportService implements IReportService {
     public void submitReport(AuthorizationToken authorizationToken, Report report) {
         Integer tokenUserID = this.jwtParser.parseSignedClaims(authorizationToken.token()).getPayload().get("userID", Integer.class);
         logger.info("[Report Service] Handling report for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
-        validateReport(report);
+        validateReport(report, false);
         checkWeather(report);
 
         try {
@@ -160,6 +163,14 @@ public class ReportService implements IReportService {
     }
 
     @Override
+    public void updateReport(AuthorizationToken authorizationToken, Report report) {
+        Integer tokenUserID = this.jwtParser.parseSignedClaims(authorizationToken.token()).getPayload().get("userID", Integer.class);
+        logger.info("[Report Service] Handling report update for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
+        validateReport(report, true);
+        this.reportsDAO.updateReport(report);
+    }
+
+    @Override
     public List<Report> getReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
         logger.traceEntry("{} getReports(job={}, startDate={}, endDate={}", marker, job, startDate, endDate);
 
@@ -206,19 +217,36 @@ public class ReportService implements IReportService {
         return reports;
     }
 
-    private void validateReport(Report report) {
+    private void validateReport(Report report, boolean update) {
         logger.info("[Report Service] Validating report...");
+
         if (report.getJobID() == 0) throw new InvalidJobSiteException();
+
         if (report.getReportDate() == null || report.getReportDate().isAfter(LocalDate.now(ZoneId.of("America/New_York"))))
             throw new InvalidReportDateException();
-        CompletableFuture<Boolean> alreadyReported = this.reportsDAO.checkReportExists(report.getJobID(), report.getReportDate());
+
+        CompletableFuture<Boolean> dbCheckFuture;
+        if (update)
+            dbCheckFuture = new CompletableFuture<>()
+                    .completeAsync(() -> this.reportsDAO.getReport(report.getId()))
+                    .thenApply((resultObj) -> {
+                        if (resultObj == null) throw new CompletionException(new NullPointerException("Report obtained from DB was null."));
+                        Report result = (Report) resultObj;
+                        return result.getJobID() == report.getJobID() && result.getReportDate().equals(report.getReportDate());
+                    });
+        else dbCheckFuture = this.reportsDAO.checkReportExists(report.getJobID(), report.getReportDate())
+                .thenApply((result) -> !result);
+
         if (report.getWorkDescriptions() == null || report.getWorkDescriptions().isEmpty())
             throw new InvalidWorkDescriptionException();
+
         if (report.getCrew().values().stream().anyMatch(Objects::isNull)) throw new InvalidCrewException();
+
         try {
-            if (alreadyReported.get()) throw new DuplicateReportException();
-        } catch (Exception e) {
-            throw new ServerException(e);
+            if (!dbCheckFuture.get()) throw update ? new BadRequestException() : new DuplicateReportException();
+        } catch (CancellationException | ExecutionException | InterruptedException e) {
+            if (ExceptionUtils.getRootCause(e) instanceof NullPointerException) throw new BadRequestException();
+            else throw new ServerException(e);
         }
     }
 
