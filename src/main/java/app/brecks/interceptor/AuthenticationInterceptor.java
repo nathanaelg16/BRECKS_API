@@ -105,7 +105,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 
     @Override
     public void afterCompletion(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler, Exception ex) throws Exception {
-        if (request.getRequestURI().equals("/validate")) attemptTokenRenewal(request, response);
+        if (request.getAttribute("token") != null) attemptTokenRenewal(request, response);
     }
 
     private boolean verifyToken(AuthorizationToken token) {
