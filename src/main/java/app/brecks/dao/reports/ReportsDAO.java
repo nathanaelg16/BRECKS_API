@@ -1,21 +1,31 @@
 package app.brecks.dao.reports;
 
 import app.brecks.exception.DatabaseException;
+import app.brecks.exception.ServerException;
 import app.brecks.model.report.Report;
-import app.brecks.model.report.ReportHistories;
+import app.brecks.model.report.ReportHistory;
 import app.brecks.model.report.SummarizedReport;
 import app.brecks.reactive.CountSubscriber;
 import app.brecks.reactive.Finder;
 import app.brecks.reactive.InsertOneResultSubscriber;
+import app.brecks.reactive.VanillaSubscriber;
+import com.mongodb.ReadConcern;
+import com.mongodb.ReadPreference;
+import com.mongodb.TransactionOptions;
+import com.mongodb.WriteConcern;
+import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.reactivestreams.client.ClientSession;
+import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoCollection;
 import com.mongodb.reactivestreams.client.MongoDatabase;
 import lombok.NonNull;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.Marker;
 import org.apache.logging.log4j.MarkerManager;
-import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -28,7 +38,9 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 
 import static com.mongodb.client.model.Filters.*;
@@ -39,11 +51,13 @@ public class ReportsDAO implements IReportsDAO {
     private static final Marker marker = MarkerManager.getMarker("[Reports DAO]");
     private final DataSource dataSource;
     private final MongoDatabase mongoDB;
+    private final MongoClient mongoClient;
 
     @Autowired
-    public ReportsDAO(DataSource dataSource, MongoDatabase mongoDB) {
+    public ReportsDAO(DataSource dataSource, MongoDatabase mongoDB, MongoClient mongoClient) {
         this.dataSource = dataSource;
         this.mongoDB = mongoDB;
+        this.mongoClient = mongoClient;
     }
 
     @Override
@@ -68,26 +82,111 @@ public class ReportsDAO implements IReportsDAO {
         logger.info("[ReportsDAO] Saving updated report to database.\nJob ID: {}\tReport Date: {}\tBy: {} (ID# {})",
                 report.getJobID(), report.getReportDate(), report.getReportBy(), report.getReportBy().getID());
 
-        MongoCollection<Document> reports = this.mongoDB.getCollection("reports");
-        CompletableFuture<List<Document>> reportsFuture = new CompletableFuture<>();
-        reports.find(eq("_id", report.getId())).subscribe(new Finder<>(reportsFuture));
+        try {
+            CompletableFuture<List<ClientSession>> clientSessionFuture = new CompletableFuture<>();
+            this.mongoClient.startSession().subscribe(new Finder<>(clientSessionFuture));
+            final ClientSession session = clientSessionFuture.thenApply((results) -> results.isEmpty() ? null : results.get(0)).get();
+            final TransactionOptions transactionOptions = TransactionOptions.builder()
+                    .readPreference(ReadPreference.primary())
+                    .readConcern(ReadConcern.LOCAL)
+                    .writeConcern(WriteConcern.MAJORITY)
+                    .build();
 
-        MongoCollection<ReportHistories> historicalReports = this.mongoDB.getCollection("historicalReports", ReportHistories.class);
-        CompletableFuture<List<ReportHistories>> historicalFuture = new CompletableFuture<>();
-        historicalReports.find(and(
-                eq("jobID", report.getJobID()),
-                gte("reportDate", report.getReportDate())
-        )).subscribe(new Finder<>(historicalFuture));
+            /* BEGIN TRANSACTION */
+            session.startTransaction(transactionOptions);
 
-        historicalFuture.whenComplete((documents, throwable) -> {
-            if (throwable != null) {
-                ObjectId historicalReportId;
-                if (documents.isEmpty()) {
-                    CompletableFuture<InsertOneResult> historicalReportFuture = new CompletableFuture<>();
-                    //historicalReports.insertOne();
-                }
+            try {
+                MongoCollection<Report> reports = this.mongoDB.getCollection("reports", Report.class);
+                CompletableFuture<List<Report>> reportsFuture = new CompletableFuture<>();
+                reports.find(session, eq("_id", report.getId())).subscribe(new Finder<>(reportsFuture));
+
+                MongoCollection<ReportHistory> historicalReports = this.mongoDB.getCollection("historicalReports", ReportHistory.class);
+
+                Report currentReport = reportsFuture.thenApply((result) -> {
+                    if (result == null || result.isEmpty())
+                        throw new CompletionException(new IllegalArgumentException("A report with the given ID [%s] does not exist.".formatted(report.getId())));
+                    else return result.get(0);
+                }).get();
+
+                CompletableFuture
+                        // 1. try to insert current report into historical reports document
+                        .supplyAsync(() -> historicalReports.findOneAndUpdate(session, and(
+                                        eq("jobID", report.getJobID()),
+                                        gte("reportDate", report.getReportDate())),
+                                Updates.push("history", currentReport))
+                        ).thenCompose((publisher) -> {
+                            CompletableFuture<List<ReportHistory>> resultFuture = new CompletableFuture<>();
+                            publisher.subscribe(new Finder<>(resultFuture));
+                            return resultFuture;
+                        }).thenApply((results) -> results != null && !results.isEmpty() && results.get(0) != null
+                        ).thenApply((successful) -> {
+                            // 2. if that was successful, continue to step 3. otherwise, create a new
+                            //    report history document containing the current report
+                            if (successful) return true;
+                            else {
+                                ReportHistory reportHistory = new ReportHistory();
+                                reportHistory.setJobID(report.getJobID());
+                                reportHistory.setReportDate(report.getReportDate());
+                                reportHistory.setHistory(new ArrayList<>(List.of(currentReport)));
+
+                                CompletableFuture<InsertOneResult> future = new CompletableFuture<>();
+                                historicalReports.insertOne(session, reportHistory)
+                                        .subscribe(new InsertOneResultSubscriber(future));
+
+                                try {
+                                    return future.get().wasAcknowledged();
+                                } catch (Exception e) {
+                                    logger.error(e);
+                                    throw new CompletionException(e);
+                                }
+                            }
+                        }).thenCompose((successful) -> {
+                            // 3. if step 1 or step 2 were successful, delete the current report
+                            if (successful) {
+                                CompletableFuture<DeleteResult> deleteResult = new CompletableFuture<>();
+                                reports.deleteOne(session, eq("_id", report.getId()))
+                                        .subscribe(new VanillaSubscriber<>(deleteResult));
+                                return deleteResult;
+                            } else return null;
+                        }).thenApply((result) -> {
+                            if (result == null) return false;
+                            else return result.wasAcknowledged();
+                        }).thenCompose((successful) -> {
+                            // 4. if that was successful, insert the new report, else return false
+                            if (successful) {
+                                CompletableFuture<InsertOneResult> insertOneResult = new CompletableFuture<>();
+                                reports.insertOne(session, report.clearID())
+                                        .subscribe(new VanillaSubscriber<>(insertOneResult));
+                                return insertOneResult;
+                            } else return null;
+                        }).thenApply((result) -> {
+                            if (result == null) return false;
+                            else return result.wasAcknowledged();
+                        }).thenApply((successful) -> {
+                            // 4. if that was successful, commit the transaction, else abort all changes
+                            if (successful) return session.commitTransaction();
+                            else return session.abortTransaction();
+                        }).thenCompose((publisher) -> {
+                            CompletableFuture<List<Void>> done = new CompletableFuture<>();
+                            publisher.subscribe(new Finder<>(done));
+                            return done;
+                        }).get();
+            } catch (Exception e) {
+                CompletableFuture<List<Void>> done = new CompletableFuture<>();
+                if (session.hasActiveTransaction()) session.abortTransaction().subscribe(new Finder<>(done));
+                done.get();
+                throw e;
             }
-        });
+            /* END TRANSACTION */
+
+        } catch (ExecutionException | InterruptedException | CancellationException e) {
+            logger.error(e);
+            if (ExceptionUtils.getRootCause(e) instanceof CompletionException) throw new DatabaseException();
+            throw new ServerException(e);
+        } catch (Exception e) {
+            logger.error(e);
+            throw new ServerException(e);
+        }
     }
 
     public CompletableFuture<Boolean> checkReportExists(int jobID, @NonNull LocalDate reportDate) {

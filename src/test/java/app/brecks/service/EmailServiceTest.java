@@ -17,6 +17,7 @@ import jakarta.mail.Session;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,6 +76,11 @@ public class EmailServiceTest {
             List<String> emails = new ArrayList<>();
             emails.add("ngutierrez@preservinc.com");
             return emails;
+        }
+
+        @Override
+        public Report getReport(ObjectId objectId) {
+            return null;
         }
 
         @Override

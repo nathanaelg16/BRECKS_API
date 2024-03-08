@@ -1,10 +1,7 @@
 package app.brecks.model.report;
 
 import app.brecks.model.employee.Employee;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.*;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -36,15 +33,28 @@ public final class Report {
     private List<String> materials = List.of();
     private Employee reportBy;
 
-    @JsonProperty("id")
+    @JsonGetter("id")
     @BsonIgnore
     public String objectId() {
         return this.id.toString();
     }
 
+    @JsonSetter("id")
+    @BsonIgnore
+    public void objectId(String id) throws IllegalArgumentException {
+        this.id = new ObjectId(id);
+    }
+
     @BsonProperty("crewSize")
     public int getCrewSize() {
         return this.crew.values().stream().reduce(0, Integer::sum);
+    }
+
+    @JsonIgnore
+    @BsonIgnore
+    public Report clearID() {
+        this.id = null;
+        return this;
     }
 
     @Override

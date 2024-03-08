@@ -61,4 +61,9 @@ public class MongoDBConfiguration {
                 .getDatabase(this.environment.getRequiredProperty("additional-datasources.mongo-1.database"))
                 .withCodecRegistry(codecRegistry);
     }
+
+    @Bean
+    public MongoClient getClient() {
+        return this.client;
+    }
 }

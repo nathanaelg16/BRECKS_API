@@ -1,12 +1,12 @@
 package app.brecks.configuration;
 
+import app.brecks.interceptor.AuthenticationInterceptor;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
-import app.brecks.interceptor.AuthenticationInterceptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -48,6 +48,7 @@ public class ServerConfiguration implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000", WEB_APP_HOST);
+                .allowedOrigins("http://localhost:3000", WEB_APP_HOST)
+                .allowedMethods("GET", "HEAD", "POST", "PUT");
     }
 }
