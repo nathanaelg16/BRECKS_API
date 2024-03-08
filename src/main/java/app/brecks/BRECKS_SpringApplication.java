@@ -11,5 +11,3 @@ public class BRECKS_SpringApplication {
     }
 
 }
-
-// todo post initialization, create root user with default password if not exists

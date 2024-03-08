@@ -10,6 +10,12 @@
         </layout>
     </appender>
 
+    <springProfile name="default">
+        <root level="info">
+            <appender-ref ref="Console"/>
+        </root>
+    </springProfile>
+
     <springProfile name="local">
         <root level="info">
             <appender-ref ref="Console"/>

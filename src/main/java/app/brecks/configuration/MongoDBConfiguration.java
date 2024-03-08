@@ -6,6 +6,7 @@ import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import com.mongodb.reactivestreams.client.MongoDatabase;
 import io.jsonwebtoken.lang.Collections;
+import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.bson.codecs.configuration.CodecProvider;
@@ -15,8 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
-
-import javax.annotation.PostConstruct;
 
 import static com.mongodb.MongoClientSettings.getDefaultCodecRegistry;
 import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
@@ -60,5 +59,10 @@ public class MongoDBConfiguration {
         return this.client
                 .getDatabase(this.environment.getRequiredProperty("additional-datasources.mongo-1.database"))
                 .withCodecRegistry(codecRegistry);
+    }
+
+    @Bean
+    public MongoClient getClient() {
+        return this.client;
     }
 }

@@ -16,7 +16,7 @@ class UserRegistrationRequest : Request {
 
     constructor()
 
-    constructor(displayName: String, email: String, username: String, password: String) {
+    constructor(displayName: String, username: String, password: String) {
         this.displayName = displayName
         this.username = username
         this.password = password

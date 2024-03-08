@@ -167,7 +167,13 @@ public class ReportService implements IReportService {
         Integer tokenUserID = this.jwtParser.parseSignedClaims(authorizationToken.token()).getPayload().get("userID", Integer.class);
         logger.info("[Report Service] Handling report update for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
         validateReport(report, true);
-        this.reportsDAO.updateReport(report);
+        try {
+            Employee reportingEmployee = this.employeesDAO.findEmployeeByID(tokenUserID);
+            report.setReportBy(reportingEmployee);
+            this.reportsDAO.updateReport(report);
+        } catch (SQLException e) {
+            throw new DatabaseException();
+        }
     }
 
     @Override
@@ -245,6 +251,7 @@ public class ReportService implements IReportService {
         try {
             if (!dbCheckFuture.get()) throw update ? new BadRequestException() : new DuplicateReportException();
         } catch (CancellationException | ExecutionException | InterruptedException e) {
+            logger.error("{} Error: {}", marker, e.getMessage());
             if (ExceptionUtils.getRootCause(e) instanceof NullPointerException) throw new BadRequestException();
             else throw new ServerException(e);
         }
