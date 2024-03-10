@@ -88,4 +88,16 @@ public class ReportsController {
         logger.traceEntry("{} getSummarizedReports(job={}, startDate={}, endDate={})", marker, job, startDate, endDate);
         return ResponseEntity.ok(this.reportService.getSummarizedReports(job, startDate, endDate));
     }
+
+    @GetMapping(path = "/history", params = {"job", "date"})
+    public ResponseEntity<List<SummarizedReport>> getSummarizedHistoricalReports(@RequestParam("job") Integer job, @RequestParam("date") LocalDate date) {
+        logger.traceEntry("{} getSummarizedHistoricalReports(job={}, date={})", marker, job, date);
+        return ResponseEntity.ok(this.reportService.getSummarizedHistoricalReports(job, date));
+    }
+
+    @GetMapping(path = "/history", params = {"job", "date", "id"})
+    public ResponseEntity<Report> getHistoricalReport(@RequestParam("job") Integer job, @RequestParam("date") LocalDate date, @RequestParam("id") String versionID) {
+        logger.traceEntry("{} getHistoricalReport(job={}, date={}, id={})", marker, job, date, versionID);
+        return ResponseEntity.ok(this.reportService.getHistoricalReport(job, date, versionID));
+    }
 }

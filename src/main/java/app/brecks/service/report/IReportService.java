@@ -20,4 +20,8 @@ public interface IReportService {
     List<Report> getReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate);
 
     List<SummarizedReport> getSummarizedReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate);
+
+    List<SummarizedReport> getSummarizedHistoricalReports(@NonNull Integer job, @NonNull LocalDate date);
+
+    Report getHistoricalReport(@NonNull Integer job, @NonNull LocalDate date, @NonNull String versionID);
 }

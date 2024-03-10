@@ -206,6 +206,20 @@ public class ReportService implements IReportService {
     }
 
     @Override
+    public Report getHistoricalReport(@NonNull Integer job, @NonNull LocalDate date, @NonNull String versionID) {
+        logger.traceEntry("{} getHistoricalReport(job={}, date={}, versionID={})", marker, job, date, versionID);
+
+        if (job == 0) throw new BadRequestException();
+
+        try {
+            return this.reportsDAO.getHistoricalReport(job, date, new ObjectId(versionID));
+        } catch (IllegalArgumentException e) {
+            logger.error("{} Could not convert string `{}` to ObjectID", marker, versionID);
+            throw new BadRequestException();
+        }
+    }
+
+    @Override
     public List<SummarizedReport> getSummarizedReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
         logger.traceEntry("{} getSummarizedReports(job={}, startDate={}, endDate={}", marker, job, startDate, endDate);
 
@@ -219,6 +233,18 @@ public class ReportService implements IReportService {
 
         List<SummarizedReport> reports = this.reportsDAO.getSummarizedReports(job, startDate, endDate);
         reports.sort(Comparator.comparing(SummarizedReport::getDate));
+
+        return reports;
+    }
+
+    @Override
+    public List<SummarizedReport> getSummarizedHistoricalReports(@NonNull Integer job, @NonNull LocalDate date) {
+        logger.traceEntry("{} getSummarizedHistoricalReports(job={}, date={})", marker, job, date);
+
+        if (job == 0) throw new BadRequestException();
+
+        List<SummarizedReport> reports = this.reportsDAO.getSummarizedHistoricalReports(job, date);
+        reports.sort(Comparator.comparing(SummarizedReport::getTimestamp).reversed());
 
         return reports;
     }

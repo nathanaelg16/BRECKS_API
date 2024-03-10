@@ -92,6 +92,16 @@ public class EmailServiceTest {
         public List<SummarizedReport> getSummarizedReports(Integer job, LocalDate startDate, LocalDate endDate) {
             return null;
         }
+
+        @Override
+        public List<SummarizedReport> getSummarizedHistoricalReports(Integer job, LocalDate date) {
+            return null;
+        }
+
+        @Override
+        public Report getHistoricalReport(@NonNull Integer job, @NonNull LocalDate date, ObjectId objectId) {
+            return null;
+        }
     }
 
     @BeforeEach

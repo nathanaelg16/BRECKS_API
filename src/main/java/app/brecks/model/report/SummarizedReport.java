@@ -42,9 +42,16 @@ public class SummarizedReport {
         return this.crew.values().stream().reduce(0, Integer::sum);
     }
 
+    @JsonProperty
+    @BsonIgnore
+    public int getTimestamp() {
+        return this.id.getTimestamp();
+    }
+
     @Override
     public String toString() {
         return new ToStringBuilder(this)
+                .append("id", id)
                 .append("date", date)
                 .append("crew", crew)
                 .toString();
