@@ -17,7 +17,9 @@ public interface IReportsDAO {
     CompletableFuture<Boolean> checkReportExists(int jobID, @NonNull LocalDate reportDate);
     List<String> getEmailsForReportAdmins() throws SQLException;
     Report getReport(ObjectId objectId);
+    Report getHistoricalReport(@NonNull Integer job, @NonNull LocalDate date, ObjectId objectId);
     List<Report> getReports(Integer job, LocalDate startDate, LocalDate endDate);
     List<SummarizedReport> getSummarizedReports(Integer job, LocalDate startDate, LocalDate endDate);
+    List<SummarizedReport> getSummarizedHistoricalReports(Integer job, LocalDate date);
     void updateReport(Report report) throws DatabaseException;
 }

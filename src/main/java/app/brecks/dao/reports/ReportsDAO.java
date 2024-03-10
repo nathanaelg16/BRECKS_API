@@ -42,6 +42,7 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.stream.Collectors;
 
 import static com.mongodb.client.model.Filters.*;
 
@@ -274,6 +275,67 @@ public class ReportsDAO implements IReportsDAO {
             return completableFuture.get();
         } catch (InterruptedException | ExecutionException e) {
             logger.error(marker, "Exception occurred retrieving reports from database.");
+            logger.error(e);
+            throw new DatabaseException();
+        }
+    }
+
+    @Override
+    public List<SummarizedReport> getSummarizedHistoricalReports(Integer job, LocalDate date) {
+        logger.traceEntry("{} getSummarizedHistoricalReports(job={}, date={})", marker, date);
+
+        CompletableFuture<List<ReportHistory>> completableFuture = new CompletableFuture<>();
+
+        this.mongoDB.getCollection("historicalReports")
+                .find(and(
+                        eq("jobID", job),
+                        eq("reportDate", date)
+                ), ReportHistory.class)
+                .subscribe(new Finder<>(completableFuture));
+
+        try {
+            return completableFuture.thenApply((results) -> {
+                if (results.isEmpty()) return null;
+                else return results.get(0);
+            }).thenApply((reportHistory) -> {
+                if (reportHistory == null) return null;
+                else return reportHistory.getHistory().stream().map((history) -> {
+                    SummarizedReport summarizedReport = new SummarizedReport();
+                    summarizedReport.setId(history.getId());
+                    summarizedReport.setDate(history.getReportDate());
+                    summarizedReport.setCrew(history.getCrew());
+                    return summarizedReport;
+                }).collect(Collectors.toCollection(ArrayList::new));
+            }).get();
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error(marker, "Exception occurred retrieving historical reports from database.");
+            logger.error(e);
+            throw new DatabaseException();
+        }
+    }
+
+    @Override
+    public Report getHistoricalReport(@NonNull Integer job, @NonNull LocalDate date, ObjectId objectId) {
+        logger.traceEntry("{} getHistoricalReport(objectId={})", marker, objectId);
+        CompletableFuture<List<ReportHistory>> completableFuture = new CompletableFuture<>();
+
+        this.mongoDB.getCollection("historicalReports")
+                .find(and(
+                        eq("jobID", job),
+                        eq("reportDate", date)
+                ), ReportHistory.class)
+                .subscribe(new Finder<>(completableFuture));
+
+        try {
+            return completableFuture.thenApply((results) -> {
+                if (results.isEmpty()) return null;
+                else return results.get(0);
+            }).thenApply((reportHistory) -> {
+                if (reportHistory == null) return java.util.Optional.<Report>empty();
+                else return reportHistory.getHistory().parallelStream().filter((report) -> report.getId().equals(objectId)).findFirst();
+            }).thenApply((optional) -> optional.orElse(null)).get();
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error(marker, "Exception occurred retrieving historical reports from database.");
             logger.error(e);
             throw new DatabaseException();
         }
