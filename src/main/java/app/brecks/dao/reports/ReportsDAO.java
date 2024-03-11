@@ -24,8 +24,6 @@ import lombok.NonNull;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
@@ -49,7 +47,7 @@ import static com.mongodb.client.model.Filters.*;
 @Repository
 public class ReportsDAO implements IReportsDAO {
     private static final Logger logger = LogManager.getLogger();
-    private static final Marker marker = MarkerManager.getMarker("[Reports DAO]");
+    
     private final DataSource dataSource;
     private final MongoDatabase mongoDB;
     private final MongoClient mongoClient;
@@ -63,7 +61,7 @@ public class ReportsDAO implements IReportsDAO {
 
     @Override
     public CompletableFuture<InsertOneResult> saveReport(Report report) {
-        logger.info("[ReportsDAO] Saving report to database.\nJob ID: {}\tReport Date: {}\tBy: {} (ID# {})",
+        logger.info("Saving report to database.\nJob ID: {}\tReport Date: {}\tBy: {} (ID# {})",
                 report.getJobID(), report.getReportDate(), report.getReportBy(), report.getReportBy().getID());
 
         MongoCollection<Report> collection = this.mongoDB.getCollection("reports", Report.class);
@@ -71,8 +69,8 @@ public class ReportsDAO implements IReportsDAO {
         collection.insertOne(report).subscribe(new InsertOneResultSubscriber(future));
 
         future.whenCompleteAsync((v, t) -> {
-            if (t == null) logger.info("[ReportsDAO] Successfully saved report to database.");
-            else logger.error("[ReportsDAO] An error occurred saving report to database: {}", t.getMessage());
+            if (t == null) logger.info("Successfully saved report to database.");
+            else logger.error("An error occurred saving report to database: {}", t.getMessage());
         });
 
         return future;
@@ -80,7 +78,7 @@ public class ReportsDAO implements IReportsDAO {
 
     @Override
     public void updateReport(Report report) throws DatabaseException {
-        logger.info("[ReportsDAO] Saving updated report to database.\nJob ID: {}\tReport Date: {}\tBy: {} (ID# {})",
+        logger.info("Saving updated report to database.\nJob ID: {}\tReport Date: {}\tBy: {} (ID# {})",
                 report.getJobID(), report.getReportDate(), report.getReportBy(), report.getReportBy().getID());
 
         try {
@@ -191,7 +189,7 @@ public class ReportsDAO implements IReportsDAO {
     }
 
     public CompletableFuture<Boolean> checkReportExists(int jobID, @NonNull LocalDate reportDate) {
-        logger.info("[ReportsDAO] Checking if report exists for job ID `{}` on `{}`", jobID, reportDate);
+        logger.info("Checking if report exists for job ID `{}` on `{}`", jobID, reportDate);
         MongoCollection<Report> collection = this.mongoDB.getCollection("reports", Report.class);
         CompletableFuture<Long> count = new CompletableFuture<>();
         CompletableFuture<Boolean> result = new CompletableFuture<>();
@@ -208,7 +206,7 @@ public class ReportsDAO implements IReportsDAO {
 
     @Override
     public List<String> getEmailsForReportAdmins() throws SQLException {
-        logger.info("[ReportsDAO] Getting emails for report admins.");
+        logger.info("Getting emails for report admins.");
 
         try (Connection c = dataSource.getConnection();
              PreparedStatement p = c.prepareStatement("select E.email " +
@@ -225,7 +223,7 @@ public class ReportsDAO implements IReportsDAO {
 
     @Override
     public Report getReport(ObjectId reportID) {
-        logger.traceEntry("{} getReport(reportID={})", marker, reportID);
+        logger.traceEntry("getReport(reportID={})", reportID);
         CompletableFuture<List<Report>> completableFuture = new CompletableFuture<>();
         this.mongoDB.getCollection("reports")
                 .find(eq("_id", reportID), Report.class)
@@ -234,7 +232,7 @@ public class ReportsDAO implements IReportsDAO {
             List<Report> results = completableFuture.get();
             return results.isEmpty() ? null : results.get(0);
         } catch (InterruptedException | ExecutionException e) {
-            logger.error(marker, "Exception occurred retrieving reports from database.");
+            logger.error("Exception occurred retrieving reports from database.");
             logger.error(e);
             throw new DatabaseException();
         }
@@ -242,7 +240,7 @@ public class ReportsDAO implements IReportsDAO {
 
     @Override
     public List<Report> getReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
-        logger.traceEntry("{} getReports(job={}, startDate={}, endDate={})", marker, startDate, endDate);
+        logger.traceEntry("getReports(job={}, startDate={}, endDate={})", startDate, endDate);
         CompletableFuture<List<Report>> completableFuture = new CompletableFuture<>();
         this.mongoDB.getCollection("reports")
                 .find(and(
@@ -254,7 +252,7 @@ public class ReportsDAO implements IReportsDAO {
         try {
             return completableFuture.get();
         } catch (InterruptedException | ExecutionException e) {
-            logger.error(marker, "Exception occurred retrieving reports from database.");
+            logger.error("Exception occurred retrieving reports from database.");
             logger.error(e);
             throw new DatabaseException();
         }
@@ -262,7 +260,7 @@ public class ReportsDAO implements IReportsDAO {
 
     @Override
     public List<SummarizedReport> getSummarizedReports(Integer job, LocalDate startDate, LocalDate endDate) {
-        logger.traceEntry("{} getReports(job={}, startDate={}, endDate={})", marker, startDate, endDate);
+        logger.traceEntry("getReports(job={}, startDate={}, endDate={})", startDate, endDate);
         CompletableFuture<List<SummarizedReport>> completableFuture = new CompletableFuture<>();
         this.mongoDB.getCollection("reports")
                 .find(and(
@@ -274,7 +272,7 @@ public class ReportsDAO implements IReportsDAO {
         try {
             return completableFuture.get();
         } catch (InterruptedException | ExecutionException e) {
-            logger.error(marker, "Exception occurred retrieving reports from database.");
+            logger.error("Exception occurred retrieving reports from database.");
             logger.error(e);
             throw new DatabaseException();
         }
@@ -282,7 +280,7 @@ public class ReportsDAO implements IReportsDAO {
 
     @Override
     public List<SummarizedReport> getSummarizedHistoricalReports(Integer job, LocalDate date) {
-        logger.traceEntry("{} getSummarizedHistoricalReports(job={}, date={})", marker, date);
+        logger.traceEntry("getSummarizedHistoricalReports(job={}, date={})", job, date);
 
         CompletableFuture<List<ReportHistory>> completableFuture = new CompletableFuture<>();
 
@@ -308,7 +306,7 @@ public class ReportsDAO implements IReportsDAO {
                 }).collect(Collectors.toCollection(ArrayList::new));
             }).get();
         } catch (InterruptedException | ExecutionException e) {
-            logger.error(marker, "Exception occurred retrieving historical reports from database.");
+            logger.error("Exception occurred retrieving historical reports from database.");
             logger.error(e);
             throw new DatabaseException();
         }
@@ -316,7 +314,7 @@ public class ReportsDAO implements IReportsDAO {
 
     @Override
     public Report getHistoricalReport(@NonNull Integer job, @NonNull LocalDate date, ObjectId objectId) {
-        logger.traceEntry("{} getHistoricalReport(objectId={})", marker, objectId);
+        logger.traceEntry("getHistoricalReport(job={}, date={}, objectId={})", job, date, objectId);
         CompletableFuture<List<ReportHistory>> completableFuture = new CompletableFuture<>();
 
         this.mongoDB.getCollection("historicalReports")
@@ -335,7 +333,7 @@ public class ReportsDAO implements IReportsDAO {
                 else return reportHistory.getHistory().parallelStream().filter((report) -> report.getId().equals(objectId)).findFirst();
             }).thenApply((optional) -> optional.orElse(null)).get();
         } catch (InterruptedException | ExecutionException e) {
-            logger.error(marker, "Exception occurred retrieving historical reports from database.");
+            logger.error("Exception occurred retrieving historical reports from database.");
             logger.error(e);
             throw new DatabaseException();
         }

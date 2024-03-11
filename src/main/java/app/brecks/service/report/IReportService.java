@@ -24,4 +24,6 @@ public interface IReportService {
     List<SummarizedReport> getSummarizedHistoricalReports(@NonNull Integer job, @NonNull LocalDate date);
 
     Report getHistoricalReport(@NonNull Integer job, @NonNull LocalDate date, @NonNull String versionID);
+
+    void restoreReport(@NonNull Integer job, @NonNull LocalDate date, @NonNull String versionID);
 }
