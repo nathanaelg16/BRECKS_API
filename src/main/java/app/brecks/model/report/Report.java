@@ -45,6 +45,12 @@ public final class Report {
         this.id = new ObjectId(id);
     }
 
+    @JsonProperty
+    @BsonIgnore
+    public int getTimestamp() {
+        return this.id.getTimestamp();
+    }
+
     @BsonProperty("crewSize")
     public int getCrewSize() {
         return this.crew.values().stream().reduce(0, Integer::sum);

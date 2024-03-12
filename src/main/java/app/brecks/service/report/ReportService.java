@@ -27,8 +27,6 @@ import lombok.NonNull;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
@@ -59,7 +57,6 @@ import java.util.function.BiFunction;
 @Service
 public class ReportService implements IReportService {
     private static final Logger logger = LogManager.getLogger();
-    private static final Marker marker = MarkerManager.getMarker("[Report Service]");
 
     private final Environment env;
     private final IWeatherService weatherService;
@@ -101,7 +98,7 @@ public class ReportService implements IReportService {
     @Override
     public void submitReport(AuthorizationToken authorizationToken, Report report) {
         Integer tokenUserID = this.jwtParser.parseSignedClaims(authorizationToken.token()).getPayload().get("userID", Integer.class);
-        logger.info("[Report Service] Handling report for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
+        logger.info("Handling report for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
         validateReport(report, false);
         checkWeather(report);
 
@@ -111,7 +108,7 @@ public class ReportService implements IReportService {
             if (job == null)
                 throw new InvalidJobSiteException();
 
-            logger.info("[Report Service] Team PM: {}", job.team().getProjectManager().getFullName());
+            logger.info("Team PM: {}", job.team().getProjectManager().getFullName());
 
             TeamMember tmReportingUser = job.team().findTeamMemberByID(tokenUserID);
 
@@ -134,12 +131,12 @@ public class ReportService implements IReportService {
                                 reportPDF = generateReportPDF(report, job.address(), PM, PS);
                                 emailService.sendReportEmail(reportingUser, job, report.getReportDate(), reportPDF);
                             } catch (SQLException | RuntimeException | IOException e) {
-                                logger.error("[Report Service] Error generating PDF: {}", e.getMessage());
+                                logger.error("Error generating PDF: {}", e.getMessage());
                                 logger.error(ExceptionUtils.getStackTrace(e));
                                 try { emailService.sendReportSubmissionNotification(report, job); }
                                 catch (Exception ignored) {}
                             } catch (MessagingException e) {
-                                logger.error("[Report Service] An error occurred delivering the message: {}", e.getMessage());
+                                logger.error("An error occurred delivering the message: {}", e.getMessage());
                                 logger.error(ExceptionUtils.getStackTrace(e));
                                 try { emailService.sendReportSubmissionNotification(report, job); }
                                 catch (Exception ignored) {}
@@ -165,7 +162,7 @@ public class ReportService implements IReportService {
     @Override
     public void updateReport(AuthorizationToken authorizationToken, Report report) {
         Integer tokenUserID = this.jwtParser.parseSignedClaims(authorizationToken.token()).getPayload().get("userID", Integer.class);
-        logger.info("[Report Service] Handling report update for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
+        logger.info("Handling report update for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
         validateReport(report, true);
         try {
             Employee reportingEmployee = this.employeesDAO.findEmployeeByID(tokenUserID);
@@ -178,7 +175,7 @@ public class ReportService implements IReportService {
 
     @Override
     public List<Report> getReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
-        logger.traceEntry("{} getReports(job={}, startDate={}, endDate={}", marker, job, startDate, endDate);
+        logger.traceEntry("getReports(job={}, startDate={}, endDate={}", job, startDate, endDate);
 
         if (job == 0) throw new BadRequestException();
 
@@ -196,32 +193,32 @@ public class ReportService implements IReportService {
 
     @Override
     public Report getReport(@NonNull String reportID) {
-        logger.traceEntry("{} getReport(reportID={})", marker, reportID);
+        logger.traceEntry("getReport(reportID={})", reportID);
         try {
             return this.reportsDAO.getReport(new ObjectId(reportID));
         } catch (IllegalArgumentException e) {
-            logger.error("{} Could not convert string `{}` to ObjectID", marker, reportID);
+            logger.error("Could not convert string `{}` to ObjectID", reportID);
             throw new BadRequestException();
         }
     }
 
     @Override
     public Report getHistoricalReport(@NonNull Integer job, @NonNull LocalDate date, @NonNull String versionID) {
-        logger.traceEntry("{} getHistoricalReport(job={}, date={}, versionID={})", marker, job, date, versionID);
+        logger.traceEntry("getHistoricalReport(job={}, date={}, versionID={})", job, date, versionID);
 
         if (job == 0) throw new BadRequestException();
 
         try {
             return this.reportsDAO.getHistoricalReport(job, date, new ObjectId(versionID));
         } catch (IllegalArgumentException e) {
-            logger.error("{} Could not convert string `{}` to ObjectID", marker, versionID);
+            logger.error("Could not convert string `{}` to ObjectID", versionID);
             throw new BadRequestException();
         }
     }
 
     @Override
     public List<SummarizedReport> getSummarizedReports(@NonNull Integer job, @NonNull LocalDate startDate, @NonNull LocalDate endDate) {
-        logger.traceEntry("{} getSummarizedReports(job={}, startDate={}, endDate={}", marker, job, startDate, endDate);
+        logger.traceEntry("getSummarizedReports(job={}, startDate={}, endDate={}", job, startDate, endDate);
 
         if (job == 0) throw new BadRequestException();
 
@@ -239,7 +236,7 @@ public class ReportService implements IReportService {
 
     @Override
     public List<SummarizedReport> getSummarizedHistoricalReports(@NonNull Integer job, @NonNull LocalDate date) {
-        logger.traceEntry("{} getSummarizedHistoricalReports(job={}, date={})", marker, job, date);
+        logger.traceEntry("getSummarizedHistoricalReports(job={}, date={})", job, date);
 
         if (job == 0) throw new BadRequestException();
 
@@ -249,8 +246,35 @@ public class ReportService implements IReportService {
         return reports;
     }
 
+    @Override
+    public void restoreReport(@NonNull Integer job, @NonNull LocalDate date, @NonNull String versionID) {
+        logger.traceEntry("restoreReport(job={}, date={}, versionID={})", job, date, versionID);
+
+        try {
+            CompletableFuture<List<Report>> currentReportFuture = CompletableFuture.supplyAsync(() -> this.getReports(job, date, date));
+            CompletableFuture.supplyAsync(() -> this.getHistoricalReport(job, date, versionID))
+                            .thenAcceptBoth(currentReportFuture, (historicalReport, currentReportList) -> {
+                                if (currentReportList.isEmpty())
+                                    throw new CompletionException(new IllegalArgumentException("Unable to find a report for job #%s on date `%s`".formatted(job, date)));
+                                else {
+                                    historicalReport.setId(currentReportList.get(0).getId());
+                                    this.reportsDAO.updateReport(historicalReport);
+                                }
+                            }).get();
+
+            logger.info("Report `{}` restored successfully.", versionID);
+        } catch (InterruptedException | CancellationException e) {
+            logger.error(e);
+            throw new ServerException(e);
+        } catch (ExecutionException e) {
+            logger.error(e);
+            if (ExceptionUtils.getRootCause(e) instanceof IllegalArgumentException) throw new BadRequestException();
+            else throw new ServerException(e);
+        }
+    }
+
     private void validateReport(Report report, boolean update) {
-        logger.info("[Report Service] Validating report...");
+        logger.info("Validating report...");
 
         if (report.getJobID() == 0) throw new InvalidJobSiteException();
 
@@ -277,16 +301,16 @@ public class ReportService implements IReportService {
         try {
             if (!dbCheckFuture.get()) throw update ? new BadRequestException() : new DuplicateReportException();
         } catch (CancellationException | ExecutionException | InterruptedException e) {
-            logger.error("{} Error: {}", marker, e.getMessage());
+            logger.error("Error: {}", e.getMessage());
             if (ExceptionUtils.getRootCause(e) instanceof NullPointerException) throw new BadRequestException();
             else throw new ServerException(e);
         }
     }
 
     private void checkWeather(Report report) {
-        logger.info("[Report Service] Checking weather...");
+        logger.info("Checking weather...");
         if (report.getWeather() == null || report.getWeather().isBlank()) {
-            logger.info("[Report Service] Weather not specified. Fetching weather...");
+            logger.info("Weather not specified. Fetching weather...");
 
             Weather weather;
 
@@ -303,18 +327,18 @@ public class ReportService implements IReportService {
     private File generateReportPDF(Report report, String address, Employee PM, Employee PS) throws IOException {
         // todo store template files locally and compare hashes before downloading from S3
 
-        logger.info("[Report Service] Generating PDF...");
+        logger.info("Generating PDF...");
 
         Path reportPDFPath = Path.of(System.getProperty("java.io.tmpdir"), "%s - DJR - %s.pdf"
                 .formatted(address, report.getReportDate().format(DateTimeFormatter.ofPattern("yyyy.MM.dd"))));
         Path tempFilePath = Files.createTempFile("report", ".pdf");
 
-        logger.info("[Report Service] Retrieving PDF template...");
+        logger.info("Retrieving PDF template...");
         S3Object reportPDFTemplateObject = spaces.getObject(env.getProperty("spaces.name"), "templates/DJR.pdf");
         S3ObjectInputStream reportPDFTemplateObjectInputStream = reportPDFTemplateObject.getObjectContent();
         Files.copy(reportPDFTemplateObjectInputStream, tempFilePath, StandardCopyOption.REPLACE_EXISTING);
 
-        logger.info("[Report Service] Writing report data to PDF...");
+        logger.info("Writing report data to PDF...");
         File reportTemplate = tempFilePath.toFile();
         PDDocumentCatalog catalog;
         try (PDDocument reportPDDocument = Loader.loadPDF(reportTemplate)) {
@@ -365,7 +389,7 @@ public class ReportService implements IReportService {
             reportPDDocument.save(reportPDFPath.toFile());
         }
 
-        logger.info("[Report Service] PDF generated successfully.");
+        logger.info("PDF generated successfully.");
         return reportPDFPath.toFile();
     }
 }
