@@ -55,8 +55,7 @@ public class JobController {
     public ResponseEntity<Object> createJobSite(@RequestBody CreateJobSiteRequest request) {
         logger.info("[Job Controller] Received request to create a new job site: {}", request);
         if (!request.isWellFormed()) return ResponseEntity.badRequest().build();
-        if (this.jobService.createJobSite(request)) return ResponseEntity.ok().build();
-        else return ResponseEntity.badRequest().build();
+        return ResponseEntity.ok(this.jobService.createJobSite(request));
     }
 
     @GetMapping("/{id}/stats")

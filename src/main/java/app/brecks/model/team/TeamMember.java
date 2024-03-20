@@ -1,8 +1,10 @@
 package app.brecks.model.team;
 
+import app.brecks.model.Views;
 import app.brecks.model.employee.Employee;
 import app.brecks.model.employee.EmployeeStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -11,6 +13,7 @@ import lombok.experimental.Accessors;
 @Accessors(fluent = true)
 @EqualsAndHashCode(callSuper = true)
 @ToString
+@JsonView({Views.Default.class})
 public final class TeamMember extends Employee {
     @JsonProperty
     private final @NonNull TeamMemberRole teamRole;

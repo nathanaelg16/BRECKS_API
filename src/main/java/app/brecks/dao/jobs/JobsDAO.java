@@ -29,6 +29,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.reactivestreams.Subscription;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Repository;
 
 import javax.sql.DataSource;
@@ -55,7 +56,7 @@ public class JobsDAO implements IJobsDAO {
     private final ITeamsDAO teamsDAO;
 
     @Autowired
-    public JobsDAO(DataSource dataSource, MongoDatabase mongoDB, ITeamsDAO teamsDAO) {
+    public JobsDAO(DataSource dataSource, MongoDatabase mongoDB, @Lazy ITeamsDAO teamsDAO) {
         this.dataSource = dataSource;
         this.mongoDB = mongoDB;
         this.teamsDAO = teamsDAO;
@@ -112,17 +113,19 @@ public class JobsDAO implements IJobsDAO {
     }
 
     @Override
-    public void insertJob(String address, String identifier, LocalDate startDate, int teamID, JobStatus status) throws SQLException {
+    public int insertJob(String address, String identifier, LocalDate startDate, int teamID, JobStatus status) throws SQLException {
         logger.info("[JobsDAO] Inserting new job...");
         try (Connection c = this.dataSource.getConnection();
-             PreparedStatement p = c.prepareStatement("call new_job_site(?, ?, ?, ?, ?);")
+             CallableStatement cs = c.prepareCall("call new_job_site(?, ?, ?, ?, ?, ?);")
         ) {
-            p.setString(1, address);
-            p.setString(2, identifier);
-            p.setInt(3, teamID);
-            p.setDate(4, Date.valueOf(startDate));
-            p.setString(5, status.getStatus());
-            p.executeUpdate();
+            cs.setString(1, address);
+            cs.setString(2, identifier);
+            cs.setInt(3, teamID);
+            cs.setDate(4, Date.valueOf(startDate));
+            cs.setString(5, status.getStatus());
+            cs.registerOutParameter(6, Types.INTEGER);
+            cs.execute();
+            return cs.getInt(6);
         }
     }
 

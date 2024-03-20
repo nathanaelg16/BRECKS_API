@@ -15,7 +15,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import javax.sql.DataSource;
+import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,6 +34,12 @@ public class JobsDAOTest {
     // todo rewrite tests
 
     static class TeamsDAOMock implements ITeamsDAO {
+
+        @Override
+        public List<Team> getTeams() throws SQLException {
+            return null;
+        }
+
         @Override
         public Team getTeam(int teamID, boolean includeJobs) {
             return new Team(1, new TeamMember(2, null, null, null,
@@ -72,7 +80,7 @@ public class JobsDAOTest {
         assertDoesNotThrow(() -> {
             Job job = this.jobsDAO.getJob(1);
             assertEquals("601 W 110th St", job.address());
-            assertEquals(1, job.team().getTeamID());
+            assertEquals(1, job.team().getId());
         });
     }
 }
