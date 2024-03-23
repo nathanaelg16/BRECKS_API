@@ -1,6 +1,7 @@
 package app.brecks.dao.contractor;
 
 import app.brecks.model.contractor.Contractor;
+import app.brecks.request.contractor.NewContractorRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Repository;
@@ -24,7 +25,7 @@ public class ContractorDAO implements IContractorDAO {
 
     @Override
     public List<Contractor> getContractors() throws SQLException {
-        logger.info("[Contractor DAO] Fetching contractors...");
+        logger.traceEntry("getContractors()");
         try (Connection c = this.dataSource.getConnection();
              PreparedStatement p = c.prepareStatement("select * from Contractors;");
              ResultSet r = p.executeQuery()
@@ -33,6 +34,18 @@ public class ContractorDAO implements IContractorDAO {
             while (r.next())
                 contractors.add(new Contractor(r.getInt("id"), r.getString("entityName"), r.getString("shortName")));
             return contractors;
+        }
+    }
+
+    @Override
+    public void addContractor(NewContractorRequest contractorRequest) throws SQLException {
+        logger.traceEntry("addContractor(contractorRequest={})", contractorRequest);
+        try (Connection c = this.dataSource.getConnection();
+             PreparedStatement p = c.prepareStatement("insert into Contractors (entityName, shortName) value (?, ?);")
+        ) {
+            p.setString(1, contractorRequest.getEntityName());
+            p.setString(2, contractorRequest.getShortName());
+            p.executeUpdate();
         }
     }
 }

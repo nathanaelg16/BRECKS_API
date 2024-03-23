@@ -2,7 +2,9 @@ package app.brecks.service.contractor;
 
 import app.brecks.dao.contractor.IContractorDAO;
 import app.brecks.exception.DatabaseException;
+import app.brecks.exception.contractor.DuplicateContractorException;
 import app.brecks.model.contractor.Contractor;
+import app.brecks.request.contractor.NewContractorRequest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,11 +25,22 @@ public class ContractorService implements IContractorService {
 
     @Override
     public List<Contractor> getContractors() {
-        this.logger.info("[Contractor Service] Retrieving contractors...");
+        this.logger.traceEntry("getContractors()");
         try {
             return this.contractorDAO.getContractors();
         } catch (SQLException e) {
             throw new DatabaseException();
+        }
+    }
+
+    @Override
+    public void addContractor(NewContractorRequest contractorRequest) {
+        this.logger.traceEntry("addContractor(contractorRequest={})", contractorRequest);
+        try {
+            this.contractorDAO.addContractor(contractorRequest);
+        } catch (SQLException e) {
+            if (e.getSQLState().equals("23000")) throw new DuplicateContractorException();
+            else throw new DatabaseException(e);
         }
     }
 }

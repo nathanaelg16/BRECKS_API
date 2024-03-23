@@ -8,10 +8,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -33,7 +30,7 @@ public class ContractorController {
     }
 
     @PostMapping
-    public ResponseEntity<Void> addContractor(NewContractorRequest contractorRequest) {
+    public ResponseEntity<Void> addContractor(@RequestBody NewContractorRequest contractorRequest) {
         logger.traceEntry("addContractor(contractorRequest={})", contractorRequest);
         if (!contractorRequest.isWellFormed()) throw new BadRequestException();
         this.contractorService.addContractor(contractorRequest);
