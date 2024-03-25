@@ -48,7 +48,10 @@ public class CreateJobSiteRequest implements Request {
 
     @Override
     public int hashCode() {
-        return new HashCodeBuilder(17, 37).append(getAddress()).append(getStartDate()).append(getTeamID()).append(getStatus()).toHashCode();
+        return new HashCodeBuilder(17, 37)
+                .append(getAddress()).append(getStartDate())
+                .append(getTeamID()).append(getStatus())
+                .toHashCode();
     }
 
     @Override

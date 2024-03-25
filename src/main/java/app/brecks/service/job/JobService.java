@@ -12,8 +12,6 @@ import app.brecks.request.job.StatusChangeRequest;
 import lombok.NonNull;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.MarkerManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +27,6 @@ import java.util.Map;
 @Service
 public class JobService implements IJobService {
     private static final Logger logger = LogManager.getLogger();
-    private static final Marker marker = MarkerManager.getMarker("[Job Service]");
     private final IJobsDAO jobsDAO;
 
     @Autowired
@@ -46,7 +43,7 @@ public class JobService implements IJobService {
         String endDateBeforeString = params.get("endDateBefore");
         String statusString = params.get("status");
 
-        logger.info(marker, """
+        logger.info("""
                 Searching for jobs with the following filters:
                 teamID: {}
                 startDateAfter: {}
@@ -71,7 +68,7 @@ public class JobService implements IJobService {
 
     @Override
     public Job getJob(int id) throws ServerException {
-        logger.info(marker, "Retrieving job with id {}", id);
+        logger.info("Retrieving job with id {}", id);
         try {
             return this.jobsDAO.getJob(id);
         } catch (SQLException e) {
@@ -81,7 +78,7 @@ public class JobService implements IJobService {
 
     @Override
     public boolean changeJobStatus(int id, StatusChangeRequest request) {
-        logger.info(marker, "Changing job status for job with id {} to {}", id, request);
+        logger.info("Changing job status for job with id {} to {}", id, request);
 
         try {
             this.jobsDAO.updateJobStatus(id, request.getStatus(), request.getStartDate(), request.getEndDate());
@@ -94,8 +91,8 @@ public class JobService implements IJobService {
     }
 
     @Override
-    public boolean createJobSite(CreateJobSiteRequest request) {
-        logger.info(marker, "Creating jobsite at address {}", request.getAddress());
+    public Integer createJobSite(CreateJobSiteRequest request) {
+        logger.info("Creating jobsite at address {}", request.getAddress());
 
         JobStatus status;
 
@@ -104,19 +101,24 @@ public class JobService implements IJobService {
             else status = JobStatus.ACTIVE;
         } else status = JobStatus.of(request.getStatus());
 
-        logger.info(marker, "Setting status to: {}", status);
+        if (!status.equals(JobStatus.NOT_STARTED) && request.getStartDate().isAfter(LocalDate.now(ZoneId.of("America/New_York"))))
+            throw new BadRequestException();
+
+        logger.info("Setting status to: {}", status);
 
         try {
-            jobsDAO.insertJob(request.getAddress(), null, request.getStartDate(), request.getTeamID(), status);
-            return true;
+            int jobID = jobsDAO.insertJob(request.getAddress(), null, request.getStartDate(), request.getTeamID(), status);
+            if (jobID > 0) return jobID;
+            else throw new DatabaseException("Database returned an invalid job ID");
         } catch (SQLException e) {
-            return false;
+            logger.error(e);
+            throw new DatabaseException();
         }
     }
 
     @Override
     public JobStats getStats(int id, @NonNull String basis, String value) {
-        logger.info(marker, "Getting stats for job id `{}` with basis `{}` and value `{}`", id, basis, value);
+        logger.info("Getting stats for job id `{}` with basis `{}` and value `{}`", id, basis, value);
 
         // todo implement getStats for range of dates
 
@@ -157,7 +159,7 @@ public class JobService implements IJobService {
                     default -> throw new BadRequestException();
                 };
             } catch (DateTimeParseException e) {
-                logger.error(marker, "An error occurred parsing date from value `{}`: {}", value, e.getMessage());
+                logger.error("An error occurred parsing date from value `{}`: {}", value, e.getMessage());
                 logger.error(e);
                 throw new BadRequestException();
             }

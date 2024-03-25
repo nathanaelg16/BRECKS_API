@@ -15,7 +15,7 @@ public interface IJobService {
 
     Job getJob(int id) throws ServerException;
 
-    boolean createJobSite(CreateJobSiteRequest request);
+    Integer createJobSite(CreateJobSiteRequest request);
 
     boolean changeJobStatus(int id, StatusChangeRequest status);
 

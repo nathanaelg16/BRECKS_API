@@ -17,7 +17,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -38,9 +37,6 @@ public class EmailService implements IEmailService {
     private final IReportsDAO reportsDAO;
     private final Environment env;
     private final AccessKeyManager accessKeyManager;
-
-    @Value("${spring.profiles.active}")
-    private String ACTIVE_PROFILE; // todo remove this in production
 
     @Autowired
     public EmailService(Environment env, Session session, IReportsDAO reportsDAO, AccessKeyManager accessKeyManager) {
@@ -138,12 +134,6 @@ public class EmailService implements IEmailService {
                     "/registration/*", "/register");
         } catch (AccessKeyException e) {
             this.notifySysAdmin(e);
-        }
-
-        // todo remove this in production
-        if ("local".equals(ACTIVE_PROFILE)) {
-            logger.info("[Email Service] Access Key: {}", accessKey);
-            return;
         }
 
         MimeBodyPart body = new MimeBodyPart();
