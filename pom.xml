@@ -164,6 +164,7 @@
 
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
+	<finalName>BRECKS_API_Server</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
