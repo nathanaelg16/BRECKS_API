@@ -10,9 +10,11 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
+import javax.sql.DataSource;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 
@@ -21,14 +23,21 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 public class AccessKeyManagerTest {
-
     private static final Logger logger = LogManager.getLogger();
+    private final DataSource dataSource;
     private AccessKeyManager accessKeyManager;
     private IAuthenticationDAO authenticationDAO;
 
+    @Autowired
+    public AccessKeyManagerTest(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
+
     @BeforeEach
     void setUp() {
-        this.accessKeyManager = new AccessKeyManager();
+        AccessKeyRepository repository = new AccessKeyRepository(dataSource);
+        this.accessKeyManager = new AccessKeyManager(repository);
+        this.authenticationDAO = new MockAuthenticationDAO();
     }
 
     @Test

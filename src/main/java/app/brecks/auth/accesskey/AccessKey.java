@@ -33,12 +33,17 @@ public final class AccessKey {
                 .build();
     }
 
-    AccessKey(@NonNull String email, @NonNull KeyDuration duration, @NonNull HashSet<String> scope) throws AccessKeyException {
+    static AccessKey create(@NonNull String email, @NonNull KeyDuration duration, @NonNull HashSet<String> scope) throws AccessKeyException {
+        LocalDateTime expiryTime = LocalDateTime.now(ZoneId.of("America/New_York")).plus(duration.getDuration());
+        return new AccessKey(email, duration, scope, expiryTime, hash(salt(email, expiryTime.toString())));
+    }
+
+    AccessKey(@NonNull String email, @NonNull KeyDuration duration, @NonNull HashSet<String> scope, @NonNull LocalDateTime expiryTime, @NonNull String hash) {
         this.email = email;
         this.duration = duration;
         this.scope = scope;
-        this.expiryTime = LocalDateTime.now(ZoneId.of("America/New_York")).plus(duration.getDuration());
-        this.hash = hash(salt(this.email, this.expiryTime.toString()));
+        this.expiryTime = expiryTime;
+        this.hash = hash;
     }
 
     public String email() {
