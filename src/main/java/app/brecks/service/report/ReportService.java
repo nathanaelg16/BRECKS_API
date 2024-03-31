@@ -293,8 +293,9 @@ public class ReportService implements IReportService {
         else dbCheckFuture = this.reportsDAO.checkReportExists(report.getJobID(), report.getReportDate())
                 .thenApply((result) -> !result);
 
-        if (report.getWorkDescriptions() == null || report.getWorkDescriptions().isEmpty())
-            throw new InvalidWorkDescriptionException();
+        if (report.getWorkDescriptions() == null) throw new InvalidWorkDescriptionException();
+        report.getWorkDescriptions().removeAll(report.getWorkDescriptions().stream().filter(String::isBlank).toList());
+        if (report.getWorkDescriptions().isEmpty()) throw new InvalidWorkDescriptionException();
 
         if (report.getCrew().values().stream().anyMatch(Objects::isNull)) throw new InvalidCrewException();
 
@@ -305,6 +306,8 @@ public class ReportService implements IReportService {
             if (ExceptionUtils.getRootCause(e) instanceof NullPointerException) throw new BadRequestException();
             else throw new ServerException(e);
         }
+
+        report.getMaterials().removeAll(report.getMaterials().stream().filter(String::isBlank).toList());
     }
 
     private void checkWeather(Report report) {

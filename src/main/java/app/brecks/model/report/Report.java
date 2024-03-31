@@ -25,6 +25,7 @@ public final class Report {
     @JsonIgnore
     private ObjectId id;
     private int jobID;
+    @JsonProperty("date")
     private LocalDate reportDate;
     private String weather;
     private Map<String, Integer> crew;
