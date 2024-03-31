@@ -22,7 +22,10 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.sql.Date;
 import java.time.Instant;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 @Component
 public class AuthenticationInterceptor implements HandlerInterceptor {
@@ -86,6 +89,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
                 AuthorizationToken token = new AuthorizationToken(authorizationToken);
                 if (verifyToken(token)) {
                     request.setAttribute("token", token);
+                    attemptTokenRenewal(token, response);
                     return true;
                 } else response.sendError(401, "Invalid authentication token");
             }
@@ -103,11 +107,6 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         return false;
     }
 
-    @Override
-    public void afterCompletion(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler, Exception ex) throws Exception {
-        if (request.getAttribute("token") != null) attemptTokenRenewal(request, response);
-    }
-
     private boolean verifyToken(AuthorizationToken token) {
         logger.info("[Auth Interceptor] Verifying token authentication: {}", token);
         if (this.revokedTokens.contains(token)) return false;
@@ -121,9 +120,8 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         return false;
     }
 
-    private void attemptTokenRenewal(HttpServletRequest request, HttpServletResponse response) {
+    private void attemptTokenRenewal(AuthorizationToken token, HttpServletResponse response) {
         logger.info("[Auth Interceptor] Checking if token qualifies for renewal...");
-        AuthorizationToken token = (AuthorizationToken) Objects.requireNonNull(request.getAttribute("token"));
         Jws<Claims> jwsToken = this.jwtParser.parseSignedClaims(token.token());
         Claims body = jwsToken.getPayload();
         if (body.getExpiration().before(Date.from(Instant.now().plusMillis(Constants.DEFAULT_TOKEN_REFRESH_DELTA)))) {
