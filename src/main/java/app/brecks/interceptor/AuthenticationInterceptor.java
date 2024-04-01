@@ -4,6 +4,7 @@ import app.brecks.auth.accesskey.AccessKey;
 import app.brecks.auth.accesskey.AccessKeyManager;
 import app.brecks.auth.jwt.AuthorizationToken;
 import app.brecks.auth.jwt.RevokedTokens;
+import app.brecks.dao.employees.IEmployeeDAO;
 import app.brecks.service.authorization.IAuthorizationService;
 import app.brecks.util.Constants;
 import io.jsonwebtoken.*;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.sql.Date;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +37,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
     private final JwtParser jwtParser;
     private final AccessKeyManager accessKeyManager;
     private final IAuthorizationService authorizationService;
+    private final IEmployeeDAO employeeDAO;
 
     static {
         OPEN_ENDPOINTS = new HashSet<>();
@@ -44,11 +47,13 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 
     @Autowired
     public AuthenticationInterceptor(@Lazy JwtParser jwtParser, RevokedTokens revokedTokens,
-                                     AccessKeyManager accessKeyManager, IAuthorizationService authorizationService) {
+                                     AccessKeyManager accessKeyManager, IAuthorizationService authorizationService,
+                                     IEmployeeDAO employeeDAO) {
         this.jwtParser = jwtParser;
         this.revokedTokens = revokedTokens;
         this.accessKeyManager = accessKeyManager;
         this.authorizationService = authorizationService;
+        this.employeeDAO = employeeDAO;
     }
 
     @Override
@@ -87,7 +92,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         switch (authorizationType) {
             case JWT -> {
                 AuthorizationToken token = new AuthorizationToken(authorizationToken);
-                if (verifyToken(token)) {
+                if (verifyToken(token, request.getRequestURI())) {
                     request.setAttribute("token", token);
                     attemptTokenRenewal(token, response);
                     return true;
@@ -107,14 +112,21 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         return false;
     }
 
-    private boolean verifyToken(AuthorizationToken token) {
-        logger.info("[Auth Interceptor] Verifying token authentication: {}", token);
+    private boolean verifyToken(AuthorizationToken token, String endpoint) {
+        logger.info("[Auth Interceptor] Verifying token authentication `{}` for request endpoint {}", token, endpoint);
         if (this.revokedTokens.contains(token)) return false;
         try {
-            this.jwtParser.parseSignedClaims(token.token());
+            Jws<Claims> claims = this.jwtParser.parseSignedClaims(token.token());
+            if (endpoint.startsWith("/admin")) {
+                Integer userID = claims.getPayload().get("userID", Integer.class);
+                return this.employeeDAO.findEmployeeByID(userID).isAdmin();
+            }
             return true;
         } catch (UnsupportedJwtException | MalformedJwtException | SignatureException | ExpiredJwtException | IllegalArgumentException e) {
             logger.info("Exception occurred parsing JWT token: {}", e.getMessage());
+        } catch (SQLException e) {
+            logger.info("Exception occurred checking db: {}", e.getMessage());
+            logger.error(e);
         }
 
         return false;

@@ -10,7 +10,7 @@
     </parent>
     <groupId>app.brecks</groupId>
     <artifactId>BRECKS-API</artifactId>
-    <version>1.0.3</version>
+    <version>1.1.0</version>
     <name>BRECKS-API</name>
     <description>BRECKS API</description>
     <properties>
