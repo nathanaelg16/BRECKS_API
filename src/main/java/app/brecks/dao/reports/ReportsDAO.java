@@ -296,7 +296,7 @@ public class ReportsDAO implements IReportsDAO {
                 if (results.isEmpty()) return null;
                 else return results.get(0);
             }).thenApply((reportHistory) -> {
-                if (reportHistory == null) return null;
+                if (reportHistory == null) return new ArrayList<SummarizedReport>();
                 else return reportHistory.getHistory().stream().map((history) -> {
                     SummarizedReport summarizedReport = new SummarizedReport();
                     summarizedReport.setId(history.getId());
