@@ -58,7 +58,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
-        logger.info("[Auth Interceptor -- Pre-Handle] Checking request authentication at endpoint {}", request.getRequestURI());
+        logger.info("Checking request authentication at endpoint {}", request.getRequestURI());
 
         if (request.getMethod().equalsIgnoreCase("options")) return true;
         if (OPEN_ENDPOINTS.contains(request.getRequestURI())) return true;
@@ -113,7 +113,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
     }
 
     private boolean verifyToken(AuthorizationToken token, String endpoint) {
-        logger.info("[Auth Interceptor] Verifying token authentication `{}` for request endpoint {}", token, endpoint);
+        logger.info("Verifying token authentication `{}` for request endpoint {}", token, endpoint);
         if (this.revokedTokens.contains(token)) return false;
         try {
             Jws<Claims> claims = this.jwtParser.parseSignedClaims(token.token());
@@ -133,14 +133,14 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
     }
 
     private void attemptTokenRenewal(AuthorizationToken token, HttpServletResponse response) {
-        logger.info("[Auth Interceptor] Checking if token qualifies for renewal...");
+        logger.info("Checking if token qualifies for renewal...");
         Jws<Claims> jwsToken = this.jwtParser.parseSignedClaims(token.token());
         Claims body = jwsToken.getPayload();
         if (body.getExpiration().before(Date.from(Instant.now().plusMillis(Constants.DEFAULT_TOKEN_REFRESH_DELTA)))) {
-            logger.info("[Auth Interceptor] Token qualifies for renewal! Renewing token...");
+            logger.info("Token qualifies for renewal! Renewing token...");
             AuthorizationToken renewedToken = this.authorizationService.reissueAuthorizationToken(token);
             response.setHeader("X-Token-Renewal", renewedToken.token());
-        } else logger.info("[Auth Interceptor] Token does not qualify for renewal.");
+        } else logger.info("Token does not qualify for renewal.");
     }
 
     @Getter
