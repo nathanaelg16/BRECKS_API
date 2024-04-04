@@ -45,9 +45,7 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -99,6 +97,7 @@ public class ReportService implements IReportService {
     public void submitReport(AuthorizationToken authorizationToken, Report report) {
         Integer tokenUserID = this.jwtParser.parseSignedClaims(authorizationToken.token()).getPayload().get("userID", Integer.class);
         logger.info("Handling report for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
+        sanitizeReport(report);
         validateReport(report, false);
         checkWeather(report);
 
@@ -163,6 +162,7 @@ public class ReportService implements IReportService {
     public void updateReport(AuthorizationToken authorizationToken, Report report) {
         Integer tokenUserID = this.jwtParser.parseSignedClaims(authorizationToken.token()).getPayload().get("userID", Integer.class);
         logger.info("Handling report update for job site ID {} submitted by user id#{}", report.getJobID(), tokenUserID);
+        sanitizeReport(report);
         validateReport(report, true);
         try {
             Employee reportingEmployee = this.employeesDAO.findEmployeeByID(tokenUserID);
@@ -293,9 +293,8 @@ public class ReportService implements IReportService {
         else dbCheckFuture = this.reportsDAO.checkReportExists(report.getJobID(), report.getReportDate())
                 .thenApply((result) -> !result);
 
-        if (report.getWorkDescriptions() == null) throw new InvalidWorkDescriptionException();
-        report.getWorkDescriptions().removeAll(report.getWorkDescriptions().stream().filter(String::isBlank).toList());
-        if (report.getWorkDescriptions().isEmpty()) throw new InvalidWorkDescriptionException();
+        if (report.getWorkDescriptions() == null || report.getWorkDescriptions().isEmpty())
+            throw new InvalidWorkDescriptionException();
 
         if (report.getCrew().values().stream().anyMatch(Objects::isNull)) throw new InvalidCrewException();
 
@@ -306,8 +305,30 @@ public class ReportService implements IReportService {
             if (ExceptionUtils.getRootCause(e) instanceof NullPointerException) throw new BadRequestException();
             else throw new ServerException(e);
         }
+    }
 
-        report.getMaterials().removeAll(report.getMaterials().stream().filter(String::isBlank).toList());
+    public void sanitizeReport(Report report) {
+        if (report.getWorkDescriptions() != null)
+            report.getWorkDescriptions().removeAll(report.getWorkDescriptions().stream().filter(String::isBlank).toList());
+
+        if (report.getMaterials() != null)
+            report.getMaterials().removeAll(report.getMaterials().stream().filter(String::isBlank).toList());
+
+        report.setVisitors(report.getVisitors().strip());
+
+        Map<String, Integer> sanitizedCrew = new HashMap<>();
+        report.getCrew().forEach((key, value) -> sanitizedCrew.put(key.strip(), value));
+        report.setCrew(sanitizedCrew);
+
+        strip(report.getWorkDescriptions());
+        strip(report.getMaterials());
+    }
+
+    private void strip(List<String> list) {
+        ListIterator<String> li = list.listIterator();
+        while (li.hasNext()) {
+            li.set(li.next().strip());
+        }
     }
 
     private void checkWeather(Report report) {
