@@ -308,23 +308,27 @@ public class ReportService implements IReportService {
     }
 
     public void sanitizeReport(Report report) {
-        if (report.getWorkDescriptions() != null)
+        if (report.getWorkDescriptions() != null){
+            strip(report.getWorkDescriptions());
             report.getWorkDescriptions().removeAll(report.getWorkDescriptions().stream().filter(String::isBlank).toList());
+        }
 
-        if (report.getMaterials() != null)
+        if (report.getMaterials() != null) {
+            strip(report.getMaterials());
             report.getMaterials().removeAll(report.getMaterials().stream().filter(String::isBlank).toList());
+        }
 
-        report.setVisitors(report.getVisitors().strip());
+        if (report.getVisitors() != null)
+            report.setVisitors(report.getVisitors().strip());
 
-        Map<String, Integer> sanitizedCrew = new HashMap<>();
-        report.getCrew().forEach((key, value) -> sanitizedCrew.put(key.strip(), value));
-        report.setCrew(sanitizedCrew);
-
-        strip(report.getWorkDescriptions());
-        strip(report.getMaterials());
+        if (report.getCrew() != null) {
+            Map<String, Integer> sanitizedCrew = new HashMap<>();
+            report.getCrew().forEach((key, value) -> sanitizedCrew.put(key.strip(), value));
+            report.setCrew(sanitizedCrew);
+        }
     }
 
-    private void strip(List<String> list) {
+    private void strip(@NonNull List<String> list) {
         ListIterator<String> li = list.listIterator();
         while (li.hasNext()) {
             li.set(li.next().strip());
