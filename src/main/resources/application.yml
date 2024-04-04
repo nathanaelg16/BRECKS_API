@@ -96,6 +96,8 @@ additional-datasources:
     password: ${brecks_mongo_password}
     auth-db: admin
     socketTimeoutMS: 30000
+    waitQueueTimeoutMS: 60000
+    wtimeoutMS: 10000
 
 ---
 spring:
@@ -131,6 +133,8 @@ additional-datasources:
     password: ${brecks_mongo_password}
     auth-db: admin
     socketTimeoutMS: 30000
+    waitQueueTimeoutMS: 20000
+    wtimeoutMS: 10000
 
 server:
   address: ${brecks_server_address}
@@ -166,6 +170,8 @@ additional-datasources:
     password: ${brecks_mongo_password}
     auth-db: admin
     socketTimeoutMS: 12500
+    waitQueueTimeoutMS: 20000
+    wtimeoutMS: 10000
 
 server:
   address: ${brecks_server_address}
