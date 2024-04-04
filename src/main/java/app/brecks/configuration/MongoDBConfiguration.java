@@ -40,7 +40,8 @@ public class MongoDBConfiguration {
         String AUTH_DB = this.environment.getProperty("additional-datasources.mongo-1.auth-db");
         String DB_HOST = this.environment.getProperty("additional-datasources.mongo-1.host");
         String DB_PROTOCOL = this.environment.getProperty("additional-datasources.mongo-1.protocol");
-        String DB_CONNECTION_URL = String.format("%s://%s:%s@%s/%s?authSource=%s&tls=true", DB_PROTOCOL, USERNAME, PASSWORD, DB_HOST, AUTH_DB, AUTH_DB);
+        String SOCKET_TIMEOUT_MS = this.environment.getProperty("additional-datasources.mongo-1.socketTimeoutMS");
+        String DB_CONNECTION_URL = String.format("%s://%s:%s@%s/%s?authSource=%s&tls=true&socketTimeoutMS=%s", DB_PROTOCOL, USERNAME, PASSWORD, DB_HOST, AUTH_DB, AUTH_DB, SOCKET_TIMEOUT_MS);
 
         logger.info("Connecting to MongoDB using URL: {}", DB_CONNECTION_URL);
 
