@@ -95,6 +95,7 @@ additional-datasources:
     username: ${brecks_mongo_username}
     password: ${brecks_mongo_password}
     auth-db: admin
+    socketTimeoutMS: 30000
 
 ---
 spring:
@@ -129,6 +130,7 @@ additional-datasources:
     username: ${brecks_mongo_username}
     password: ${brecks_mongo_password}
     auth-db: admin
+    socketTimeoutMS: 30000
 
 server:
   address: ${brecks_server_address}
@@ -163,6 +165,7 @@ additional-datasources:
     username: ${brecks_mongo_username}
     password: ${brecks_mongo_password}
     auth-db: admin
+    socketTimeoutMS: 12500
 
 server:
   address: ${brecks_server_address}
