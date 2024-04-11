@@ -93,8 +93,10 @@ public class ReportsDAO implements IReportsDAO {
 
             /* BEGIN TRANSACTION */
             session.startTransaction(transactionOptions);
+            logger.info("MongoDB Transaction: Started");
 
             try {
+                logger.info("Retrieving current report...");
                 MongoCollection<Report> reports = this.mongoDB.getCollection("reports", Report.class);
                 CompletableFuture<List<Report>> reportsFuture = new CompletableFuture<>();
                 reports.find(session, eq("_id", report.getId())).subscribe(new Finder<>(reportsFuture));
@@ -102,11 +104,16 @@ public class ReportsDAO implements IReportsDAO {
                 MongoCollection<ReportHistory> historicalReports = this.mongoDB.getCollection("historicalReports", ReportHistory.class);
 
                 Report currentReport = reportsFuture.thenApply((result) -> {
-                    if (result == null || result.isEmpty())
+                    if (result == null || result.isEmpty()){
+                        logger.info("Unable to find report with id {}!", report.getId());
                         throw new CompletionException(new IllegalArgumentException("A report with the given ID [%s] does not exist.".formatted(report.getId())));
-                    else return result.get(0);
+                    } else {
+                        logger.info("Report found!");
+                        return result.get(0);
+                    }
                 }).get();
 
+                logger.info("Attempting to insert current report into existing historical reports document...");
                 CompletableFuture
                         // 1. try to insert current report into historical reports document
                         .supplyAsync(() -> historicalReports.findOneAndUpdate(session, and(
@@ -123,6 +130,7 @@ public class ReportsDAO implements IReportsDAO {
                             //    report history document containing the current report
                             if (successful) return true;
                             else {
+                                logger.info("Insertion unsuccessful. Creating new historical reports document.");
                                 ReportHistory reportHistory = new ReportHistory();
                                 reportHistory.setJobID(report.getJobID());
                                 reportHistory.setReportDate(report.getReportDate());
@@ -140,8 +148,10 @@ public class ReportsDAO implements IReportsDAO {
                                 }
                             }
                         }).thenCompose((successful) -> {
+                            logger.info("Insertion {}!", successful ? "successful" : "UNSUCCESSFUL");
                             // 3. if step 1 or step 2 were successful, delete the current report
                             if (successful) {
+                                logger.info("Attempting to delete the current report...");
                                 CompletableFuture<DeleteResult> deleteResult = new CompletableFuture<>();
                                 reports.deleteOne(session, eq("_id", report.getId()))
                                         .subscribe(new VanillaSubscriber<>(deleteResult));
@@ -153,6 +163,7 @@ public class ReportsDAO implements IReportsDAO {
                         }).thenCompose((successful) -> {
                             // 4. if that was successful, insert the new report, else return false
                             if (successful) {
+                                logger.info("Deletion successful!");
                                 CompletableFuture<InsertOneResult> insertOneResult = new CompletableFuture<>();
                                 reports.insertOne(session, report.clearID())
                                         .subscribe(new VanillaSubscriber<>(insertOneResult));
@@ -163,19 +174,38 @@ public class ReportsDAO implements IReportsDAO {
                             else return result.wasAcknowledged();
                         }).thenApply((successful) -> {
                             // 4. if that was successful, commit the transaction, else abort all changes
-                            if (successful) return session.commitTransaction();
-                            else return session.abortTransaction();
+                            if (successful) {
+                                logger.info("Committing transaction!");
+                                return session.commitTransaction();
+                            }
+                            else {
+                                logger.info("Aborting transaction!");
+                                return session.abortTransaction();
+                            }
                         }).thenCompose((publisher) -> {
                             CompletableFuture<List<Void>> done = new CompletableFuture<>();
                             publisher.subscribe(new Finder<>(done));
                             return done;
                         }).get();
             } catch (Exception e) {
+                logger.error(e);
                 CompletableFuture<List<Void>> done = new CompletableFuture<>();
-                if (session.hasActiveTransaction()) session.abortTransaction().subscribe(new Finder<>(done));
+                if (session.hasActiveTransaction()) {
+                    logger.info("Aborting transaction due to exception!");
+                    session.abortTransaction().subscribe(new Finder<>(done));
+                }
                 done.get();
                 throw e;
             }
+
+            CompletableFuture<List<Void>> done = new CompletableFuture<>();
+            if (session.hasActiveTransaction()) {
+                logger.info("Transaction was never committed! Aborting....");
+                session.abortTransaction().subscribe(new Finder<>(done));
+            }
+            done.get();
+
+            logger.info("MongoDB Transaction: Ended");
             /* END TRANSACTION */
 
         } catch (ExecutionException | InterruptedException | CancellationException e) {
