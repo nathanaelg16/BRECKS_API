@@ -35,15 +35,15 @@ public class MongoDBConfiguration {
 
     @PostConstruct
     private void setUpClient() {
-        String USERNAME = this.environment.getProperty("additional-datasources.mongo-1.username");
-        String PASSWORD = this.environment.getProperty("additional-datasources.mongo-1.password");
-        String AUTH_DB = this.environment.getProperty("additional-datasources.mongo-1.auth-db");
-        String DB_HOST = this.environment.getProperty("additional-datasources.mongo-1.host");
-        String DB_PROTOCOL = this.environment.getProperty("additional-datasources.mongo-1.protocol");
-        String SOCKET_TIMEOUT_MS = this.environment.getProperty("additional-datasources.mongo-1.socketTimeoutMS");
-        String WAIT_QUEUE_TIMEOUT_MS = this.environment.getProperty("additional-datasources.mongo-1.waitQueueTimeoutMS");
-        String W_TIMEOUT_MS = this.environment.getProperty("additional-datasources.mongo-1.wtimeoutMS");
-        String DB_CONNECTION_URL = String.format("%s://%s:%s@%s/%s?authSource=%s&tls=true&socketTimeoutMS=%s&waitQueueTimeoutMS=%s&wtimeoutMS=%s", DB_PROTOCOL, USERNAME, PASSWORD, DB_HOST, AUTH_DB, AUTH_DB, SOCKET_TIMEOUT_MS, WAIT_QUEUE_TIMEOUT_MS, W_TIMEOUT_MS);
+        String USERNAME = this.environment.getProperty("additional-datasources.mongodb.username");
+        String PASSWORD = this.environment.getProperty("additional-datasources.mongodb.password");
+        String DB_HOST = this.environment.getProperty("additional-datasources.mongodb.host");
+        String DB_PROTOCOL = this.environment.getProperty("additional-datasources.mongodb.protocol");
+        String SOCKET_TIMEOUT_MS = this.environment.getProperty("additional-datasources.mongodb.socketTimeoutMS");
+        String WAIT_QUEUE_TIMEOUT_MS = this.environment.getProperty("additional-datasources.mongodb.waitQueueTimeoutMS");
+        String W_TIMEOUT_MS = this.environment.getProperty("additional-datasources.mongodb.wtimeoutMS");
+        String APP_NAME = this.environment.getProperty("additional-datasources.mongodb.appName");
+        String DB_CONNECTION_URL = String.format("%s://%s:%s@%s/?&tls=true&socketTimeoutMS=%s&waitQueueTimeoutMS=%s&wtimeoutMS=%s&retryWrites=true&w=majority&appName=%s", DB_PROTOCOL, USERNAME, PASSWORD, DB_HOST, SOCKET_TIMEOUT_MS, WAIT_QUEUE_TIMEOUT_MS, W_TIMEOUT_MS, APP_NAME);
 
         logger.info("Connecting to MongoDB using URL: {}", DB_CONNECTION_URL);
 
@@ -60,7 +60,7 @@ public class MongoDBConfiguration {
         CodecProvider codecProvider = PojoCodecProvider.builder().automatic(true).conventions(Collections.of(ANNOTATION_CONVENTION)).build();
         CodecRegistry codecRegistry = fromRegistries(getDefaultCodecRegistry(), fromProviders(codecProvider));
         return this.client
-                .getDatabase(this.environment.getRequiredProperty("additional-datasources.mongo-1.database"))
+                .getDatabase(this.environment.getRequiredProperty("additional-datasources.mongodb.database"))
                 .withCodecRegistry(codecRegistry);
     }
 
