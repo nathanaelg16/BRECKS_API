@@ -13,9 +13,11 @@ import com.mongodb.ReadConcern;
 import com.mongodb.ReadPreference;
 import com.mongodb.TransactionOptions;
 import com.mongodb.WriteConcern;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.client.result.UpdateResult;
 import com.mongodb.reactivestreams.client.ClientSession;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoCollection;
@@ -116,38 +118,16 @@ public class ReportsDAO implements IReportsDAO {
                 logger.info("Attempting to insert current report into existing historical reports document...");
                 CompletableFuture
                         // 1. try to insert current report into historical reports document
-                        .supplyAsync(() -> historicalReports.findOneAndUpdate(session, and(
+                        .supplyAsync(() -> historicalReports.updateOne(session, and(
                                         eq("jobID", report.getJobID()),
                                         gte("reportDate", report.getReportDate())),
-                                Updates.push("history", currentReport))
+                                Updates.push("history", currentReport), new UpdateOptions().upsert(true))
                         ).thenCompose((publisher) -> {
-                            CompletableFuture<List<ReportHistory>> resultFuture = new CompletableFuture<>();
-                            publisher.subscribe(new Finder<>(resultFuture));
+                            CompletableFuture<UpdateResult> resultFuture = new CompletableFuture<>();
+                            publisher.subscribe(new VanillaSubscriber<>(resultFuture));
                             return resultFuture;
-                        }).thenApply((results) -> results != null && !results.isEmpty() && results.get(0) != null
-                        ).thenApply((successful) -> {
-                            // 2. if that was successful, continue to step 3. otherwise, create a new
-                            //    report history document containing the current report
-                            if (successful) return true;
-                            else {
-                                logger.info("Insertion unsuccessful. Creating new historical reports document.");
-                                ReportHistory reportHistory = new ReportHistory();
-                                reportHistory.setJobID(report.getJobID());
-                                reportHistory.setReportDate(report.getReportDate());
-                                reportHistory.setHistory(new ArrayList<>(List.of(currentReport)));
-
-                                CompletableFuture<InsertOneResult> future = new CompletableFuture<>();
-                                historicalReports.insertOne(session, reportHistory)
-                                        .subscribe(new InsertOneResultSubscriber(future));
-
-                                try {
-                                    return future.get().wasAcknowledged();
-                                } catch (Exception e) {
-                                    logger.error(e);
-                                    throw new CompletionException(e);
-                                }
-                            }
-                        }).thenCompose((successful) -> {
+                        }).thenApply(UpdateResult::wasAcknowledged)
+                        .thenCompose((successful) -> {
                             logger.info("Insertion {}!", successful ? "successful" : "UNSUCCESSFUL");
                             // 3. if step 1 or step 2 were successful, delete the current report
                             if (successful) {
@@ -177,8 +157,7 @@ public class ReportsDAO implements IReportsDAO {
                             if (successful) {
                                 logger.info("Committing transaction!");
                                 return session.commitTransaction();
-                            }
-                            else {
+                            } else {
                                 logger.info("Aborting transaction!");
                                 return session.abortTransaction();
                             }
@@ -198,12 +177,12 @@ public class ReportsDAO implements IReportsDAO {
                 throw e;
             }
 
-            CompletableFuture<List<Void>> done = new CompletableFuture<>();
             if (session.hasActiveTransaction()) {
+                CompletableFuture<List<Void>> done = new CompletableFuture<>();
                 logger.info("Transaction was never committed! Aborting....");
                 session.abortTransaction().subscribe(new Finder<>(done));
+                logger.info("MongoDB Transaction: Started");
             }
-            done.get();
 
             logger.info("MongoDB Transaction: Ended");
             /* END TRANSACTION */
