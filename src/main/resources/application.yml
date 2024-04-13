@@ -53,6 +53,32 @@ platform:
   reports:
     send-email: notification
 
+spring:
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: ${brecks_yosemite_url}
+    username: ${brecks_yosemite_user}
+    password: ${brecks_yosemite_password}
+    hikari:
+      connectionTimeout: 60000
+      maxLifetime: 30000
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        useServerPrepStmts: true
+
+additional-datasources:
+  mongodb:
+    appName: ${brecks_mongo_appName}
+    protocol: mongodb+srv
+    host: ${brecks_mongo_host}
+    database: ${brecks_mongo_db}
+    username: ${brecks_mongo_username}
+    password: ${brecks_mongo_password}
+    socketTimeoutMS: 12500
+    waitQueueTimeoutMS: 20000
+    wtimeoutMS: 10000
+
 #spring:
 #  web:
 #    resources:
@@ -63,18 +89,6 @@ spring:
   config:
     activate:
       on-profile: test
-  datasource:
-    type: com.zaxxer.hikari.HikariDataSource
-    url: ${brecks_yosemite_url}
-    username: ${brecks_yosemite_user}
-    password: ${brecks_yosemite_password}
-    hikari:
-      connection-timeout: 600000
-      keepalive-time: 30000
-      data-source-properties:
-        cachePrepStmts: true
-        prepStmtCacheSize: 250
-        useServerPrepStmts: true
 #  datasource:
 #    url: jdbc:h2:mem:testdb
 #    driver-class-name: org.h2.Driver
@@ -88,13 +102,7 @@ webapp:
   host: ${brecks_webapp_host}
 
 additional-datasources:
-  mongo-1:
-    protocol: mongodb+srv
-    host: ${brecks_mongo_host}
-    database: ${brecks_mongo_db}
-    username: ${brecks_mongo_username}
-    password: ${brecks_mongo_password}
-    auth-db: admin
+  mongodb:
     socketTimeoutMS: 30000
     waitQueueTimeoutMS: 60000
     wtimeoutMS: 10000
@@ -104,18 +112,6 @@ spring:
   config:
     activate:
       on-profile: local
-  datasource:
-    type: com.zaxxer.hikari.HikariDataSource
-    url: ${brecks_yosemite_url}
-    username: ${brecks_yosemite_user}
-    password: ${brecks_yosemite_password}
-    hikari:
-      connectionTimeout: 60000
-      maxLifetime: 30000
-      data-source-properties:
-        cachePrepStmts: true
-        prepStmtCacheSize: 250
-        useServerPrepStmts: true
 
 logging:
   level:
@@ -125,13 +121,7 @@ webapp:
   host: ${brecks_webapp_host}
 
 additional-datasources:
-  mongo-1:
-    protocol: mongodb+srv
-    host: ${brecks_mongo_host}
-    database: ${brecks_mongo_db}
-    username: ${brecks_mongo_username}
-    password: ${brecks_mongo_password}
-    auth-db: admin
+  mongodb:
     socketTimeoutMS: 30000
     waitQueueTimeoutMS: 20000
     wtimeoutMS: 10000
@@ -145,33 +135,9 @@ spring:
   config:
     activate:
       on-profile: production
-  datasource:
-    type: com.zaxxer.hikari.HikariDataSource
-    url: ${brecks_yosemite_url}
-    username: ${brecks_yosemite_user}
-    password: ${brecks_yosemite_password}
-    hikari:
-      connectionTimeout: 60000
-      maxLifetime: 30000
-      data-source-properties:
-        cachePrepStmts: true
-        prepStmtCacheSize: 250
-        useServerPrepStmts: true
 
 webapp:
   host: ${brecks_webapp_host}
-
-additional-datasources:
-  mongo-1:
-    protocol: mongodb+srv
-    host: ${brecks_mongo_host}
-    database: ${brecks_mongo_db}
-    username: ${brecks_mongo_username}
-    password: ${brecks_mongo_password}
-    auth-db: admin
-    socketTimeoutMS: 12500
-    waitQueueTimeoutMS: 20000
-    wtimeoutMS: 10000
 
 server:
   address: ${brecks_server_address}
