@@ -120,7 +120,7 @@ public class ReportsDAO implements IReportsDAO {
                         // 1. try to insert current report into historical reports document
                         .supplyAsync(() -> historicalReports.updateOne(session, and(
                                         eq("jobID", report.getJobID()),
-                                        gte("reportDate", report.getReportDate())),
+                                        eq("reportDate", report.getReportDate())),
                                 Updates.push("history", currentReport), new UpdateOptions().upsert(true))
                         ).thenCompose((publisher) -> {
                             CompletableFuture<UpdateResult> resultFuture = new CompletableFuture<>();
