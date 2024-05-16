@@ -1,7 +1,9 @@
 package app.brecks.request.employee;
 
 import app.brecks.request.Request;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -9,8 +11,6 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class AddEmployeeRequest implements Request {
     private String firstName;
     private String lastName;
@@ -19,6 +19,16 @@ public class AddEmployeeRequest implements Request {
 
     @Getter(AccessLevel.NONE)
     private Boolean admin = null;
+
+    public AddEmployeeRequest(String firstName, String lastName, String role, String email, Boolean admin) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.role = role;
+        this.email = email;
+        this.admin = admin;
+    }
+
+    public AddEmployeeRequest() {}
 
     public Boolean isAdmin() {
         return this.admin;

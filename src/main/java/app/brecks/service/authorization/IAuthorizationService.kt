@@ -9,6 +9,7 @@ import app.brecks.response.RegistrationDetailsResponse
 interface IAuthorizationService {
     fun authenticateUser(userLoginRequest: UserLoginRequest): AuthorizationToken?
     fun registerUser(userRegistrationRequest: UserRegistrationRequest, userEmail: String): AuthorizationToken?
+    fun registerUser(userRegistrationRequest: UserRegistrationRequest): AuthorizationToken?
     fun checkUnique(username: String): Boolean
     fun validatePassword(password: String): Boolean
     fun setPassword(user: String, password: String)
