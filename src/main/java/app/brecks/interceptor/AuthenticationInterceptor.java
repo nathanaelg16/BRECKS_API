@@ -43,6 +43,8 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         OPEN_ENDPOINTS = new HashSet<>();
         OPEN_ENDPOINTS.add("/error");
         OPEN_ENDPOINTS.add("/login");
+        OPEN_ENDPOINTS.add("/register");
+        OPEN_ENDPOINTS.add("/registration/checkUnique");
     }
 
     @Autowired

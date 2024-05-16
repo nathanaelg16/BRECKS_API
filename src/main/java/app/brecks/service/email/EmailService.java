@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.Objects;
 
 @Service
@@ -194,17 +195,17 @@ public class EmailService implements IEmailService {
         }
 
         public Envelope sendTo(@NonNull String... recipients) throws MessagingException {
-            this.message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(String.join(",", recipients)));
+            this.message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(String.join(",", filterBrecksEmails(recipients))));
             return this;
         }
 
         public Envelope CC(@NonNull String... recipients) throws MessagingException {
-            this.message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(String.join(",", recipients)));
+            this.message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(String.join(",", filterBrecksEmails(recipients))));
             return this;
         }
 
         public Envelope BCC(@NonNull String... recipients) throws MessagingException {
-            this.message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(String.join(",", recipients)));
+            this.message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(String.join(",", filterBrecksEmails(recipients))));
             return this;
         }
 
@@ -214,6 +215,13 @@ public class EmailService implements IEmailService {
                 message.setSentDate(Date.from(Instant.now()));
                 Transport.send(message);
             } else throw new MessagingException("Recipients list is empty!");
+        }
+
+        private static String[] filterBrecksEmails(String... recipients) {
+            return Arrays
+                    .stream(recipients)
+                    .filter((r) -> !r.endsWith("@brecks.app") && !r.endsWith("@brecks.cc"))
+                    .toList().toArray(new String[0]);
         }
     }
 }
