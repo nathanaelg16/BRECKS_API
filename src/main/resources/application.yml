@@ -1,0 +1,150 @@
+logging:
+  level:
+    root: INFO
+
+server:
+  error:
+    include-stacktrace: never
+    include-message: always
+    include-binding-errors: never
+    include-exception: false
+
+weather:
+  appid: ${brecks_weather_api_appid}
+  lat: 40.7485
+  lon: -73.9858
+  units: imperial
+  endpoint: https://api.openweathermap.org/data/2.5/weather
+  timeMachine:
+    condition:
+      endpoint: https://api.openweathermap.org/data/3.0/onecall/timemachine
+    minMaxTemp:
+      endpoint: https://api.openweathermap.org/data/3.0/onecall/day_summary
+
+mail:
+  smtp:
+    auth: true
+    starttls:
+      enable: true
+    host: ${brecks_mail_host}
+    port: ${brecks_mail_port}
+    user: ${brecks_mail_user}
+    password: ${brecks_mail_password}
+  from: ${brecks_mail_from}
+
+sysadmin:
+  email: ${brecks_sysadmin_email}
+
+spaces:
+  key: ${brecks_spaces_key}
+  secret: ${brecks_spaces_endpoint}
+  endpoint: nyc3.digitaloceanspaces.com
+  name: brecks
+
+authentication:
+  password.pepper: ${brecks_authentication_password_pepper}
+
+platform:
+  default-user:
+    email: ${brecks_default_user_email}
+    firstName: ${brecks_default_user_firstName}
+    lastName: ${brecks_default_user_lastName}
+    role: ${brecks_default_user_role}
+  reports:
+    send-email: notification
+
+spring:
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: ${brecks_yosemite_url}
+    username: ${brecks_yosemite_user}
+    password: ${brecks_yosemite_password}
+    hikari:
+      connection-timeout: 10000
+      keepalive-time: 30000
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 250
+        useServerPrepStmts: true
+
+additional-datasources:
+  mongodb:
+    appName: ${brecks_mongo_appName}
+    protocol: mongodb+srv
+    host: ${brecks_mongo_host}
+    database: ${brecks_mongo_db}
+    username: ${brecks_mongo_username}
+    password: ${brecks_mongo_password}
+    socketTimeoutMS: 12500
+    waitQueueTimeoutMS: 20000
+    wtimeoutMS: 10000
+
+#spring:
+#  web:
+#    resources:
+#      add-mappings: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+#  datasource:
+#    url: jdbc:h2:mem:testdb
+#    driver-class-name: org.h2.Driver
+#    username: sa
+#    password: password
+  h2:
+    console:
+      enabled: true
+
+webapp:
+  host: ${brecks_webapp_host}
+
+additional-datasources:
+  mongodb:
+    socketTimeoutMS: 30000
+    waitQueueTimeoutMS: 60000
+    wtimeoutMS: 10000
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+logging:
+  level:
+    app.brecks: TRACE
+
+webapp:
+  host: ${brecks_webapp_host}
+
+additional-datasources:
+  mongodb:
+    socketTimeoutMS: 30000
+    waitQueueTimeoutMS: 20000
+    wtimeoutMS: 10000
+
+server:
+  address: ${brecks_server_address}
+  port: ${brecks_server_port}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: production
+
+webapp:
+  host: ${brecks_webapp_host}
+
+server:
+  address: ${brecks_server_address}
+  port: ${brecks_server_port}
+  ssl:
+    enabled: true
+    key-store-type: ${brecks_server_ssl_keystore_type}
+    key-store: ${brecks_server_ssl_keystore}
+    key-store-password: ${brecks_server_ssl_keystore_password}
+    key-alias: ${brecks_server_ssl_keyalias}

@@ -35,7 +35,7 @@ build/
 ### Project Configuration Files ###
 src/main/resources/serviceAccountKey.json
 src/main/resources/*.properties
-src/main/resources/application.yml
+*.env
 
 ### Firebase ###
 ui-debug.log
@@ -44,6 +44,3 @@ firebase-debug.log
 
 ### H2 DB Config Files
 /src/test/resources/*.sql
-
-### Application Secrets ###
-src/main/java/com/preservinc/production/djr/service/authorization/AuthorizationService.kt
